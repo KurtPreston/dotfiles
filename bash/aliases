@@ -210,13 +210,13 @@ brclean () {
   fi
 }
 
-# Remote Branch Clean: clears out all remote branches that have already been merged into master
+# Remote Branch Clean: clears out all remote branches that have already been merged
 rbrclean () {
   # Fetch remote branches and clear refs to deleted ones
   git fetch --prune
 
   # Update master
-  git checkout master && git pull origin master
+  # git checkout master && git pull origin master
 
   if [ $? -eq 0 ]; then
     echo "Checkout successful -- Updating/cleaning code"

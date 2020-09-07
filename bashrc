@@ -1,3 +1,6 @@
+[[ "$VSCODE" == "yes" ]] && return
+[ -z "$PS1" ] && return
+
 source ~/.bash/aliases
 source ~/.bash/completions
 source ~/.bash/paths
