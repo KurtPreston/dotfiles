@@ -10,6 +10,6 @@ if [[ -d $HOME/.local/lib/python2.7/site-packages ]]; then
 elif [[ -d $HOME/Library/Python/2.7/lib/python/site-packages ]]; then
   export SITE_PACKAGES="$HOME/Library/Python/2.7/lib/python/site-packages"
   export PATH="$HOME/Library/Python/2.7/bin:$PATH"
-else
+elif [[ $(command -v python) ]]; then
   export SITE_PACKAGES=`python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"`
 fi
