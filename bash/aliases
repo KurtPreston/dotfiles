@@ -3,7 +3,7 @@
 alias ..='cd ..'
 
 function killport() {
-  pid=$(lsof -i:$1 -t); kill -TERM $pid || kill -KILL $pid
+  lsof -i TCP:$1 | grep LISTEN | awk '{print $2}' | xargs kill -9
 }
 
 # changing directory to code project
