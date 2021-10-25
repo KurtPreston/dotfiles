@@ -11,5 +11,8 @@ elif [[ -d $HOME/Library/Python/2.7/lib/python/site-packages ]]; then
   export SITE_PACKAGES="$HOME/Library/Python/2.7/lib/python/site-packages"
   export PATH="$HOME/Library/Python/2.7/bin:$PATH"
 elif [[ $(command -v python) ]]; then
-  export SITE_PACKAGES=`python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"`
+  PY_VER=$(python -V 2>&1 | sed 's/.* \([0-9]\).\([0-9]\).*/\1\2/')
+  if [ "$PY_VER" -lt "30" ]; then
+    export SITE_PACKAGES=`python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"`
+  fi
 fi
