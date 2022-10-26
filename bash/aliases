@@ -194,7 +194,6 @@ alias changelog='git log `git log -1 --format=%H -- CHANGELOG*`..; cat CHANGELOG
 alias gm='git commit -m'
 alias gma='git commit -am'
 alias gra='git remote add'
-alias grr='git remote rm'
 alias gg='git g'
 alias gsg='git sgrep'
 # grs: git reset submodules
