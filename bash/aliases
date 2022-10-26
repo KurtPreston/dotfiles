@@ -325,6 +325,7 @@ function git_large_files() {
   done <<< "$(git rev-list --all --objects | awk '{print $1}' | git cat-file --batch-check | sort -k3nr | head -n 20)"
 }
 
+# Aggressively reset project and submodules
 function git_recursive_reset() {
   # Point all submodules to git commit
   git submodule update --recursive --init
