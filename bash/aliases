@@ -334,7 +334,7 @@ function git_recursive_reset() {
   git submodule foreach --recursive git reset --hard
 
   # Remove any lingering files or folders
-  git clean -xffd -e .env
+  git clean -xffd -e .env -e .vscode/settings.json
   git submodule foreach --recursive git clean -xffd
 }
 alias grr="git_recursive_reset"
