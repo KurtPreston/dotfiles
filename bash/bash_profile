@@ -1,0 +1,9 @@
+# Bash profile file
+# This file is sourced by bash for login shells
+
+# Source bashrc if it exists
+if [[ -f ~/.bashrc ]]; then
+    source ~/.bashrc
+fi
+
+# Login shell specific configuration can be added here 

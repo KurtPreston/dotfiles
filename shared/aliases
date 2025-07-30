@@ -1,0 +1,3 @@
+# Shared aliases file
+# This file contains aliases that work across bash, zsh, and fish
+# Source this file from your shell-specific configuration
