@@ -1,0 +1,8 @@
+# Fish-specific aliases
+
+# Reload fish configuration
+function reload
+    echo "Reloading fish configuration..."
+    source ~/.dotfiles/fish/config.fish
+    echo "Fish configuration reloaded!"
+end 

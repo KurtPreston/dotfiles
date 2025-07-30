@@ -1,0 +1,8 @@
+# Zsh-specific aliases
+
+# Reload zsh configuration
+reload() {
+    echo "Reloading zsh configuration..."
+    source ~/.dotfiles/zsh/zshrc
+    echo "Zsh configuration reloaded!"
+} 

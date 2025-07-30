@@ -6,6 +6,11 @@ if [[ -f ~/.dotfiles/shared/aliases ]]; then
     source ~/.dotfiles/shared/aliases
 fi
 
+# Source bash-specific aliases
+if [[ -f ~/.dotfiles/bash/aliases ]]; then
+    source ~/.dotfiles/bash/aliases
+fi
+
 # Source prompt configuration
 if [[ -f ~/.dotfiles/bash/prompt ]]; then
     source ~/.dotfiles/bash/prompt

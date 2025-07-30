@@ -6,6 +6,11 @@ if [[ -f ~/.dotfiles/shared/aliases ]]; then
     source ~/.dotfiles/shared/aliases
 fi
 
+# Source zsh-specific aliases
+if [[ -f ~/.dotfiles/zsh/aliases ]]; then
+    source ~/.dotfiles/zsh/aliases
+fi
+
 # Source prompt configuration
 if [[ -f ~/.dotfiles/zsh/prompt ]]; then
     source ~/.dotfiles/zsh/prompt
