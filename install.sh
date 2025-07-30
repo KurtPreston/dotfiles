@@ -75,5 +75,13 @@ case "$CURRENT_SHELL" in
         ;;
 esac
 
+# Setup Git configuration
+echo -e "${GREEN}Setting up Git configuration...${NC}"
+if [[ -f "$DOTFILES_DIR/git/setup_gitconfig.sh" ]]; then
+    "$DOTFILES_DIR/git/setup_gitconfig.sh"
+else
+    echo -e "${YELLOW}Git setup script not found, skipping Git configuration.${NC}"
+fi
+
 echo -e "${GREEN}Installation complete!${NC}"
 echo -e "${YELLOW}Please restart your shell or run 'source ~/.${CURRENT_SHELL}rc' to apply changes.${NC}" 

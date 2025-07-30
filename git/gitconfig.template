@@ -1,0 +1,37 @@
+[user]
+  name = GIT_USER_NAME
+  email = GIT_USER_EMAIL
+[alias]
+  co = checkout
+  br = branch
+  st = status
+  rb = !sh -c 'git fetch &&  git checkout --track -b $0 origin/$0'
+  rl = branch -a
+  lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
+  sup = !sh -c 'git submodule update --init --recursive && git submodule status'
+  pup = !sh -c 'git submodule update --init --recursive && git submodule status'
+  su = !sh -c 'git submodule -q foreach git pull -q origin master'
+  ignore = update-index --assume-unchanged
+  unignore = update-index --no-assume-unchanged
+  ignored = !git ls-files -v | grep "^[[:lower:]]"
+  rs = submodule foreach git reset --hard
+  si = stash-index
+[color]
+  diff = auto
+  status = auto
+  branch = auto
+  ui = auto
+[core]
+  excludesfile = ~/.gitignore
+  editor = vim
+  autocrlf = input
+  pager = less -S
+[apply]
+  whitespace = nowarn
+[format]
+  pretty = %C(yellow)%h%Creset %s %C(red)(%cr)%Creset
+[grep]
+  lineNumber = true
+[push]
+  default = tracking
+  recurseSubmodules = check
