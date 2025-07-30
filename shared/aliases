@@ -2,10 +2,6 @@
 # This file contains aliases that work across bash, zsh, and fish
 # Source this file from your shell-specific configuration
 
-# Directory navigation
-# Quick navigation to code directory
-alias c='cd $CODE_HOME'
-
 # Git aliases
 alias g='git'
 alias ga='git add'

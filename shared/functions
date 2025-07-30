@@ -1,0 +1,15 @@
+# Shared functions file
+# This file contains functions that work across bash, zsh, and fish
+# Source this file from your shell-specific configuration
+
+# Directory navigation function
+# Usage: c [DIR] - Navigate to CODE_HOME or to a specific directory within CODE_HOME
+c() {
+    if [ $# -eq 0 ]; then
+        # No arguments: go to CODE_HOME
+        cd "$CODE_HOME"
+    else
+        # With arguments: go to specific directory within CODE_HOME
+        cd "$CODE_HOME/$1"
+    fi
+} 
