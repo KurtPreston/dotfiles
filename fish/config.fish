@@ -24,6 +24,11 @@ if test -f ~/.dotfiles/fish/aliases
     source ~/.dotfiles/fish/aliases
 end
 
+# Source fish-specific functions
+if test -f ~/.dotfiles/fish/functions.fish
+    source ~/.dotfiles/fish/functions.fish
+end
+
 # Load NVM if available (Fish shell approach)
 if test -s ~/.nvm/nvm.sh
     # For Fish, we need to use bass to run nvm commands or use fisher nvm plugin

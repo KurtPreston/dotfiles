@@ -1,5 +1,6 @@
 # Shared functions file
-# This file contains functions that work across bash, zsh, and fish
+# This file contains functions that work across bash and zsh
+# Fish shell uses its own functions file: ~/.dotfiles/fish/functions.fish
 # Source this file from your shell-specific configuration
 
 # Directory navigation function
