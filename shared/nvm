@@ -4,3 +4,37 @@
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# Auto-switch node version based on .nvmrc
+nvm_auto_use() {
+    if [ -f ".nvmrc" ] && command -v nvm > /dev/null 2>&1; then
+        local nvmrc_version=$(cat .nvmrc | tr -d '[:space:]')
+        local current_version=$(nvm current 2>/dev/null)
+        
+        if [ "$nvmrc_version" != "$current_version" ]; then
+            echo "Found .nvmrc with version $nvmrc_version. Switching from $current_version..."
+            nvm use "$nvmrc_version"
+        fi
+    fi
+}
+
+# Set up auto-switching hooks based on shell type
+if [ -n "$ZSH_VERSION" ]; then
+    # Zsh hook
+    autoload -U add-zsh-hook
+    add-zsh-hook chpwd nvm_auto_use
+elif [ -n "$BASH_VERSION" ]; then
+    # Bash hook using PROMPT_COMMAND
+    __nvm_auto_use_wrapper() {
+        local exit_code=$?
+        nvm_auto_use
+        return $exit_code
+    }
+    
+    if [[ ":$PROMPT_COMMAND:" != *":__nvm_auto_use_wrapper:"* ]]; then
+        PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND; }__nvm_auto_use_wrapper"
+    fi
+fi
+
+# Run once on shell startup for current directory
+nvm_auto_use
