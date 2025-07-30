@@ -11,10 +11,15 @@ if [[ -f ~/.dotfiles/bash/prompt ]]; then
     source ~/.dotfiles/bash/prompt
 fi
 
-# Source all files in shared directory
+# Source shared environment variables first
+if [[ -f ~/.dotfiles/shared/env ]]; then
+    source ~/.dotfiles/shared/env
+fi
+
+# Source other shared files
 if [[ -d ~/.dotfiles/shared ]]; then
     for file in ~/.dotfiles/shared/*; do
-        if [[ -f "$file" ]]; then
+        if [[ -f "$file" && "$file" != ~/.dotfiles/shared/env ]]; then
             source "$file"
         fi
     done

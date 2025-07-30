@@ -1,6 +1,19 @@
 # Fish configuration file
 # This file is sourced by fish
 
+# Source shared environment variables using bass for bash compatibility
+if test -f ~/.dotfiles/shared/env
+    if command -v bass >/dev/null
+        bass source ~/.dotfiles/shared/env
+    else
+        echo "Warning: bass not found. Install bass for proper environment variable support in fish."
+        # Fallback: set CODE_HOME manually if not set
+        if not set -q CODE_HOME
+            set -gx CODE_HOME $HOME/Code
+        end
+    end
+end
+
 # Source shared aliases
 if test -f ~/.dotfiles/shared/aliases
     source ~/.dotfiles/shared/aliases
