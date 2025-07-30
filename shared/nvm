@@ -11,7 +11,11 @@ nvm_auto_use() {
         local nvmrc_version=$(cat .nvmrc | tr -d '[:space:]')
         local current_version=$(nvm current 2>/dev/null)
         
-        if [ "$nvmrc_version" != "$current_version" ]; then
+        # Normalize versions by removing 'v' prefix for comparison
+        local normalized_nvmrc=$(echo "$nvmrc_version" | sed 's/^v//')
+        local normalized_current=$(echo "$current_version" | sed 's/^v//')
+        
+        if [ "$normalized_nvmrc" != "$normalized_current" ]; then
             echo "Found .nvmrc with version $nvmrc_version. Switching from $current_version..."
             nvm use "$nvmrc_version"
         fi
