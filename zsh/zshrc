@@ -16,6 +16,11 @@ if [[ -f ~/.dotfiles/zsh/prompt ]]; then
     source ~/.dotfiles/zsh/prompt
 fi
 
+# Source NVM configuration
+if [[ -f ~/.dotfiles/shared/nvm ]]; then
+    source ~/.dotfiles/shared/nvm
+fi
+
 # Source local configuration if it exists
 if [[ -f ~/.localrc ]]; then
     source ~/.localrc
