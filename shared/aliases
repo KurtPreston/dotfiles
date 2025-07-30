@@ -2,6 +2,13 @@
 # This file contains aliases that work across bash, zsh, and fish
 # Source this file from your shell-specific configuration
 
+# Directory navigation
+# Set CODE_HOME if not already set
+export CODE_HOME="${CODE_HOME:-$HOME/Code}"
+
+# Quick navigation to code directory
+alias c='cd $CODE_HOME'
+
 # Git aliases
 alias g='git'
 alias ga='git add'

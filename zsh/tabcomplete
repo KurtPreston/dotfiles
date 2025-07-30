@@ -1,0 +1,17 @@
+# Zsh tab completion functions
+
+# Completion function for 'c' alias
+_c_completion() {
+    local code_home="${CODE_HOME:-$HOME/Code}"
+    
+    # Only provide completions if CODE_HOME directory exists
+    if [[ -d "$code_home" ]]; then
+        # Get directories in CODE_HOME (excluding hidden directories)
+        local -a dirs
+        dirs=(${code_home}/*(/:t))
+        _describe 'directories' dirs
+    fi
+}
+
+# Register completion for the 'c' alias
+compdef _c_completion c

@@ -11,6 +11,11 @@ if test -f ~/.dotfiles/fish/aliases
     source ~/.dotfiles/fish/aliases
 end
 
+# Source tab completion functions
+if test -f ~/.dotfiles/fish/tabcomplete
+    source ~/.dotfiles/fish/tabcomplete
+end
+
 # Load NVM if available (Fish shell approach)
 if test -s ~/.nvm/nvm.sh
     # For Fish, we need to use bass to run nvm commands or use fisher nvm plugin

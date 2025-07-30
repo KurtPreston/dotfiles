@@ -11,6 +11,11 @@ if [[ -f ~/.dotfiles/zsh/prompt ]]; then
     source ~/.dotfiles/zsh/prompt
 fi
 
+# Source tab completion functions
+if [[ -f ~/.dotfiles/zsh/tabcomplete ]]; then
+    source ~/.dotfiles/zsh/tabcomplete
+fi
+
 # Source all files in shared directory
 if [[ -d ~/.dotfiles/shared ]]; then
     for file in ~/.dotfiles/shared/*; do

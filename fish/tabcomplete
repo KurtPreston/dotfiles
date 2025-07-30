@@ -1,0 +1,19 @@
+# Fish tab completion functions
+
+# Completion for 'c' alias
+function __c_complete
+    set -l code_home (test -n "$CODE_HOME"; and echo $CODE_HOME; or echo "$HOME/Code")
+    
+    # Only provide completions if CODE_HOME directory exists
+    if test -d "$code_home"
+        # Get directories in CODE_HOME
+        for dir in "$code_home"/*
+            if test -d "$dir"
+                basename "$dir"
+            end
+        end
+    end
+end
+
+# Register completion for the 'c' alias
+complete -c c -f -a "(__c_complete)" -d "Navigate to directory in CODE_HOME"
