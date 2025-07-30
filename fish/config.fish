@@ -2,7 +2,7 @@
 # This file is sourced by fish
 
 # Source shared environment variables using bass for bash compatibility
-if command -v bass >/dev/null
+if type -q bass
     bass source ~/.dotfiles/shared/env
 else
     echo "Warning: bass not found. Install bass for proper environment variable support in fish."
@@ -28,7 +28,7 @@ if test -s ~/.nvm/nvm.sh
     set -gx NVM_DIR ~/.nvm
     
     # Source nvm script using bass if available, otherwise skip
-    if command -v bass >/dev/null
+    if type -q bass
         bass source ~/.nvm/nvm.sh
     end
 end
