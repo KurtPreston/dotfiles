@@ -11,11 +11,6 @@ if [[ -f ~/.dotfiles/zsh/prompt ]]; then
     source ~/.dotfiles/zsh/prompt
 fi
 
-# Source tab completion functions
-if [[ -f ~/.dotfiles/zsh/tabcomplete ]]; then
-    source ~/.dotfiles/zsh/tabcomplete
-fi
-
 # Source all files in shared directory
 if [[ -d ~/.dotfiles/shared ]]; then
     for file in ~/.dotfiles/shared/*; do
@@ -25,9 +20,14 @@ if [[ -d ~/.dotfiles/shared ]]; then
     done
 fi
 
-# Source local configuration if it exists
+# Source local configuration if it exists (before tab completion to allow CODE_HOME override)
 if [[ -f ~/.localrc ]]; then
     source ~/.localrc
+fi
+
+# Source tab completion functions (after local config to use any CODE_HOME override)
+if [[ -f ~/.dotfiles/zsh/tabcomplete ]]; then
+    source ~/.dotfiles/zsh/tabcomplete
 fi
 
 # Zsh-specific configuration can be added here 
