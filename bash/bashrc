@@ -6,4 +6,9 @@ if [[ -f ~/.dotfiles/shared/aliases ]]; then
     source ~/.dotfiles/shared/aliases
 fi
 
+# Source local configuration if it exists
+if [[ -f ~/.localrc ]]; then
+    source ~/.localrc
+fi
+
 # Bash-specific configuration can be added here 
