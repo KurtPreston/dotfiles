@@ -1,0 +1,48 @@
+# Output git root directory
+function git_root() {
+  local root first_commit
+  # git displays its own error if not in a repository
+  root=$(git rev-parse --show-toplevel) || return
+  superproject=$(git rev-parse --show-superproject-working-tree)
+  if [[ -n $superproject ]]; then
+    echo $superproject
+    return
+  elif [[ -n $root ]]; then
+    echo $root
+    return
+  elif [[ $(git rev-parse --is-inside-git-dir) = true ]]; then
+    # We're inside the .git directory
+    # Store the commit id of the first commit to compare later
+    # It's possible that $GIT_DIR points somewhere not inside the repo
+    first_commit=$(git rev-list --parents HEAD | tail -1) ||
+      echo "$0: Can't get initial commit" 2>&1 && false && return
+    root=$(git rev-parse --git-dir)/.. &&
+      # subshell so we don't change the user's working directory
+    ( cd "$root" &&
+      if [[ $(git rev-list --parents HEAD | tail -1) = $first_commit ]]; then
+        pwd
+      else
+        echo "$FUNCNAME: git directory is not inside its repository" 2>&1
+        false
+      fi
+    )
+  else
+    echo "$FUNCNAME: Can't determine repository root" 2>&1
+    false
+  fi
+}
+
+# Recursively cd into project root
+function cd_git_root() {
+  local root
+  root=$(git_root) || return # git_root will print any errors
+  cd "$root"
+  if [[ $(pwd) = $(git_root) ]]; then
+    return
+  else
+    cd_git_root
+  fi
+}
+
+# cr: change to root dir
+alias cr="cd_git_root"
