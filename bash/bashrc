@@ -6,6 +6,11 @@ if [[ -f ~/.dotfiles/shared/aliases ]]; then
     source ~/.dotfiles/shared/aliases
 fi
 
+# Source prompt configuration
+if [[ -f ~/.dotfiles/bash/prompt ]]; then
+    source ~/.dotfiles/bash/prompt
+fi
+
 # Source local configuration if it exists
 if [[ -f ~/.localrc ]]; then
     source ~/.localrc

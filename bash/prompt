@@ -1,0 +1,70 @@
+# Text formatting params
+c_default=`tty -s && tput sgr0`
+
+c_red=`tty -s && tput setaf 1`
+c_green=`tty -s && tput setaf 2`
+c_yellow=`tty -s && tput setaf 3`
+c_blue=`tty -s && tput setaf 4`
+c_purple=`tty -s && tput setaf 5`
+c_cyan=`tty -s && tput setaf 6`
+c_white=`tty -s && tput setaf 7`
+
+c_bold=`tty -s && tput bold`
+
+parse_git_branch ()
+{
+  if git rev-parse --git-dir >/dev/null 2>&1; then
+    gitver=$(git branch 2>/dev/null| sed -n '/^\*/s/^\* //p')
+  else
+    return 0
+  fi
+
+  echo -e "$gitver"
+}
+
+branch_color ()
+{
+  if git rev-parse --git-dir >/dev/null 2>&1; then
+    color=""
+    if git diff --quiet 2>/dev/null >&2
+      then
+        color="${c_green}"
+    else
+      color=${c_red}
+    fi
+  else
+    return 0
+  fi
+
+  echo -ne $color
+}
+
+git_prompt ()
+{
+  echo -ne '$(if [ -n "$(parse_git_branch)" ]; then echo "[\[$(branch_color)\]$(parse_git_branch)\[${c_default}\]] "; fi)'
+}
+
+show_host_if_remote ()
+{
+  if [[ ! -z "$SSH_CONNECTION" ]]; then
+    echo -ne '\[${c_blue}\]$(hostname)\[${c_default}\]'
+  else
+    return 0
+  fi
+}
+
+show_colored_user ()
+{
+  if [[ "$(whoami)" = "root" ]]; then
+    echo -ne '\[${c_red}\]$(whoami)\[${c_white}\]'
+  else
+    echo -ne '\[${c_white}\]$(whoami)'
+  fi
+}
+
+show_path ()
+{
+  echo -ne '\[${c_cyan}\]\w'
+}
+
+PS1="$(git_prompt)$(show_colored_user)@$(show_host_if_remote)$(show_path)\[${c_default}\]: " 

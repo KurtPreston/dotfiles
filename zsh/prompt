@@ -1,0 +1,59 @@
+# Text formatting params
+
+parse_git_branch ()
+{
+  if git rev-parse --git-dir >/dev/null 2>&1; then
+    gitver=$(git branch 2>/dev/null| sed -n '/^\*/s/^\* //p')
+  else
+    return 0
+  fi
+
+  echo -e "$gitver"
+}
+
+branch_color ()
+{
+  if git rev-parse --git-dir >/dev/null 2>&1; then
+    color=""
+    if git diff --quiet 2>/dev/null >&2
+      then
+        color="%{$fg[green]%}"
+    else
+      color="%{$fg[red]%}"
+    fi
+  else
+    return 0
+  fi
+
+  echo -ne $color
+}
+
+git_prompt ()
+{
+  echo -ne '$(if [ -n "$(parse_git_branch)" ]; then echo "[$(branch_color)$(parse_git_branch)%{$reset_color%}] "; fi)'
+}
+
+show_host_if_remote ()
+{
+  if [[ ! -z "$SSH_CONNECTION" ]]; then
+    echo -ne '%{$fg[blue]%}$(hostname)%{$reset_color%}'
+  else
+    return 0
+  fi
+}
+
+show_colored_user ()
+{
+  if [[ "$(whoami)" = "root" ]]; then
+    echo -ne '%{$fg[red]%}$(whoami)%{$reset_color%}'
+  else
+    echo -ne '%{$reset_color%}$(whoami)'
+  fi
+}
+
+show_path ()
+{
+  echo -ne '%{$fg[cyan]%}%~'
+}
+
+PS1="$(git_prompt)$(show_colored_user)@$(show_host_if_remote)$(show_path)%{$reset_color%}: "
