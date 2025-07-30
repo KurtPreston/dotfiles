@@ -2,28 +2,20 @@
 # This file is sourced by zsh
 
 # Source zsh-specific aliases
-if [[ -f ~/.dotfiles/zsh/aliases ]]; then
-    source ~/.dotfiles/zsh/aliases
-fi
+source ~/.dotfiles/zsh/aliases
 
 # Source prompt configuration
-if [[ -f ~/.dotfiles/zsh/prompt ]]; then
-    source ~/.dotfiles/zsh/prompt
-fi
+source ~/.dotfiles/zsh/prompt
 
 # Source shared environment variables first
-if [[ -f ~/.dotfiles/shared/env ]]; then
-    source ~/.dotfiles/shared/env
-fi
+source ~/.dotfiles/shared/env
 
 # Source other shared files
-if [[ -d ~/.dotfiles/shared ]]; then
-    for file in ~/.dotfiles/shared/*; do
-        if [[ -f "$file" && "$file" != ~/.dotfiles/shared/env ]]; then
-            source "$file"
-        fi
-    done
-fi
+for file in ~/.dotfiles/shared/*; do
+    if [[ "$file" != ~/.dotfiles/shared/env ]]; then
+        source "$file"
+    fi
+done
 
 # Source local configuration if it exists (before tab completion to allow CODE_HOME override)
 if [[ -f ~/.localrc ]]; then
@@ -31,8 +23,6 @@ if [[ -f ~/.localrc ]]; then
 fi
 
 # Source tab completion functions (after local config to use any CODE_HOME override)
-if [[ -f ~/.dotfiles/zsh/tabcomplete ]]; then
-    source ~/.dotfiles/zsh/tabcomplete
-fi
+source ~/.dotfiles/zsh/tabcomplete
 
 # Zsh-specific configuration can be added here 

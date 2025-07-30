@@ -2,28 +2,20 @@
 # This file is sourced by bash for non-login shells
 
 # Source bash-specific aliases
-if [[ -f ~/.dotfiles/bash/aliases ]]; then
-    source ~/.dotfiles/bash/aliases
-fi
+source ~/.dotfiles/bash/aliases
 
 # Source prompt configuration
-if [[ -f ~/.dotfiles/bash/prompt ]]; then
-    source ~/.dotfiles/bash/prompt
-fi
+source ~/.dotfiles/bash/prompt
 
 # Source shared environment variables first
-if [[ -f ~/.dotfiles/shared/env ]]; then
-    source ~/.dotfiles/shared/env
-fi
+source ~/.dotfiles/shared/env
 
 # Source other shared files
-if [[ -d ~/.dotfiles/shared ]]; then
-    for file in ~/.dotfiles/shared/*; do
-        if [[ -f "$file" && "$file" != ~/.dotfiles/shared/env ]]; then
-            source "$file"
-        fi
-    done
-fi
+for file in ~/.dotfiles/shared/*; do
+    if [[ "$file" != ~/.dotfiles/shared/env ]]; then
+        source "$file"
+    fi
+done
 
 # Source local configuration if it exists (before tab completion to allow CODE_HOME override)
 if [[ -f ~/.localrc ]]; then
@@ -31,8 +23,6 @@ if [[ -f ~/.localrc ]]; then
 fi
 
 # Source tab completion functions (after local config to use any CODE_HOME override)
-if [[ -f ~/.dotfiles/bash/tabcomplete ]]; then
-    source ~/.dotfiles/bash/tabcomplete
-fi
+source ~/.dotfiles/bash/tabcomplete
 
 # Bash-specific configuration can be added here 
