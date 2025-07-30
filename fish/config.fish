@@ -46,4 +46,9 @@ if test -f ~/.dotfiles/fish/tabcomplete
     source ~/.dotfiles/fish/tabcomplete
 end
 
+# Source fish prompt configuration
+if test -f ~/.dotfiles/fish/prompt.fish
+    source ~/.dotfiles/fish/prompt.fish
+end
+
 # Fish-specific configuration can be added here 
