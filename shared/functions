@@ -13,4 +13,19 @@ c() {
         # With arguments: go to specific directory within CODE_HOME
         cd "$CODE_HOME/$1"
     fi
-} 
+}
+
+# Aggressively reset project and submodules
+function git_recursive_reset() {
+  # Point all submodules to git commit
+  git submodule update --recursive --init
+
+  # Cancel any staged changes
+  git reset --hard
+  git submodule foreach --recursive git reset --hard
+
+  # Remove any lingering files or folders
+  git clean -xffd -e .env -e .vscode/settings.json
+  git submodule foreach --recursive git clean -xffd
+}
+alias grr="git_recursive_reset"
