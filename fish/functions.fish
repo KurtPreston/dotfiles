@@ -28,4 +28,10 @@ function git_recursive_reset --description "Aggressively reset project and submo
 end
 
 # Alias for git_recursive_reset
-alias grr="git_recursive_reset" 
+alias grr="git_recursive_reset"
+
+# Kill process listening on a port
+# Usage: killport 8080
+function killport --description "Kill process listening on a port"
+    lsof -i TCP:$argv[1] | grep LISTEN | awk '{print $2}' | xargs kill -9
+end 
