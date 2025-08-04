@@ -64,8 +64,8 @@ prompt_for_git_info() {
     fi
     
     # Store the info for future use
-    echo "GIT_USER_NAME=$GIT_USER_NAME" > "$GIT_USER_INFO_FILE"
-    echo "GIT_USER_EMAIL=$GIT_USER_EMAIL" >> "$GIT_USER_INFO_FILE"
+    echo "GIT_USER_NAME=\"$GIT_USER_NAME\"" > "$GIT_USER_INFO_FILE"
+    echo "GIT_USER_EMAIL=\"$GIT_USER_EMAIL\"" >> "$GIT_USER_INFO_FILE"
     
     echo -e "${GREEN}Git user info saved for future installations.${NC}"
 }
