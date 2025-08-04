@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# first, go to the root of the git repo
+cd `git rev-parse --show-toplevel`
+
+# create a commit with only the stuff in staging
+INDEXTREE=`git write-tree`
+INDEXCOMMIT=`echo "" | git commit-tree $INDEXTREE -p HEAD`
+
+# create a child commit with the changes in the working tree
+git add -A
+WORKINGTREE=`git write-tree`
+WORKINGCOMMIT=`echo "" | git commit-tree $WORKINGTREE -p $INDEXCOMMIT`
+
+# get back to a clean state with no changes, staged or otherwise
+git reset -q --hard
+
+# Cherry-pick the index changes back to the index, and stash.
+# This cherry-pick is guaranteed to succeed
+git cherry-pick -n $INDEXCOMMIT
+git stash
+
+# Now cherry-pick the working tree changes. This cherry-pick may fail
+# due to conflicts
+git cherry-pick -n $WORKINGCOMMIT
+
+CONFLICTS=`git ls-files -u`
+if test -z "$CONFLICTS"; then
+    # If there are no conflicts, it's safe to reset, so that
+    # any previously unstaged changes remain unstaged
+    #
+    # However, if there are conflicts, then we don't want to reset the files
+    # and lose the merge/conflict info.
+    git reset -q
+fi
