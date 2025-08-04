@@ -15,7 +15,7 @@
   unignore = update-index --no-assume-unchanged
   ignored = !git ls-files -v | grep "^[[:lower:]]"
   rs = submodule foreach git reset --hard
-  si = stash push --staged
+  si = stash-index
 [color]
   diff = auto
   status = auto
