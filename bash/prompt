@@ -15,6 +15,25 @@ parse_git_branch ()
 {
   if git rev-parse --git-dir >/dev/null 2>&1; then
     gitver=$(git branch 2>/dev/null| sed -n '/^\*/s/^\* //p')
+    
+    # If we're on a detached HEAD (gitver will be like "(HEAD detached at abc1234)")
+    if [[ "$gitver" =~ ^\(HEAD\ detached\ at\ ([a-f0-9]+)\)$ ]]; then
+      current_sha=$(git rev-parse HEAD)
+      short_sha=$(git rev-parse --short HEAD)
+      # Check if current SHA matches any local branch
+      matching_branch=$(git for-each-ref --format='%(refname:short)' refs/heads/ | while read branch; do
+        if [[ "$(git rev-parse "$branch")" == "$current_sha" ]]; then
+          echo "$branch"
+          break
+        fi
+      done)
+      
+      if [[ -n "$matching_branch" ]]; then
+        gitver="$matching_branch (detached)"
+      else
+        gitver="$short_sha (detached)"
+      fi
+    fi
   else
     return 0
   fi
