@@ -12,6 +12,7 @@ alias gd='git diff'
 alias gdc='git diff --cached'
 alias gs='git status'
 alias gl='git log --oneline'
+alias gsi='git stash-index'
 
 # ls aliases
 alias l='ls -al'

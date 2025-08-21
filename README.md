@@ -43,10 +43,18 @@ Simple terminal prompt showing git branch, user, and dir.
 | `gs` | `git status` | Show repository status |
 | `gl` | `git log --oneline` | Show commit history in one line |
 | `grr` | `git_recursive_reset` | Aggressively reset project and submodules |
-| `git si` | `git stash-index` | Stashes currently staged code |
+| `gsi` | `git stash-index` | Stashes currently staged code |
 | `cr` | `cd_git_root` | Change to git repository root |
 | `l` | `ls -al` | List all files with details |
-| `reload` | `source ~/.dotfiles/*/config` | Reload shell configuration | 
+| `reload` | `source ~/.dotfiles/*/config` | Reload shell configuration |
+
+### Functions
+
+| Function | Description |
+|----------|-------------|
+| `killport <PORT>` | Kill process listening on a specific port |
+| `git_recursive_reset` | Aggressively reset project and submodules |
+| `git stash-index` | Stashes currently staged code |
 
 ## Structure
 
