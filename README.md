@@ -1,6 +1,6 @@
 # Dotfiles
 
-A clean, organized dotfiles repository that works with bash, zsh, and fish shells.
+A standard prompt, config, and aliases for bash, zsh, and fish shells.
 
 ## Installation
 
