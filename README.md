@@ -2,6 +2,52 @@
 
 A clean, organized dotfiles repository that works with bash, zsh, and fish shells.
 
+## Installation
+
+1. Clone the repository anywhere you prefer:
+   ```bash
+   mkdir ~/Code
+   git clone git@github.com:KurtPreston/dotfiles.git ~/Code/dotfiles
+   cd ~/Code/dotfiles
+   ```
+
+2. Run the installation script:
+   ```bash
+   ./install.sh
+   ```
+
+The script will:
+- Create a symlink from `~/.dotfiles` to your cloned repository
+- Create symlinks for the appropriate configuration files
+- Back up any existing configuration files
+- Install shared aliases
+
+## Features
+
+### Prompt
+
+Simple terminal prompt showing git branch, user, and dir.
+
+### Aliases
+
+| Alias | Command | Description |
+|-------|---------|-------------|
+| `c <DIR>` | `cd $CODE_HOME/<DIR>` | Quick jump to a repo in your ~/Code/ folder |
+| `g` | `git` | Git command shorthand |
+| `ga` | `git add` | Stage files for commit |
+| `gb` | `git branch` | List or manage branches |
+| `gc` | `git commit` | Commit staged changes |
+| `gco` | `git checkout` | Switch branches or restore files |
+| `gd` | `git diff` | Show unstaged changes |
+| `gdc` | `git diff --cached` | Show staged changes |
+| `gs` | `git status` | Show repository status |
+| `gl` | `git log --oneline` | Show commit history in one line |
+| `grr` | `git_recursive_reset` | Aggressively reset project and submodules |
+| `git si` | `git stash-index` | Stashes currently staged code |
+| `cr` | `cd_git_root` | Change to git repository root |
+| `l` | `ls -al` | List all files with details |
+| `reload` | `source ~/.dotfiles/*/config` | Reload shell configuration | 
+
 ## Structure
 
 ```
@@ -17,26 +63,6 @@ dotfiles/
 └── shared/             # Shared configuration
     └── aliases         # Cross-shell aliases
 ```
-
-## Installation
-
-1. Clone the repository anywhere you prefer:
-   ```bash
-   git clone git@github.com:KurtPreston/dotfiles.git ~/Code/dotfiles
-   cd ~/Code/dotfiles
-   ```
-
-2. Run the installation script:
-   ```bash
-   ./install.sh
-   ```
-
-The script will:
-- Detect your current shell
-- Create a symlink from `~/.dotfiles` to your cloned repository
-- Create symlinks for the appropriate configuration files
-- Back up any existing configuration files
-- Install shared aliases
 
 ## Local overrides
 
