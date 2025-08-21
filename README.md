@@ -38,6 +38,10 @@ The script will:
 - Back up any existing configuration files
 - Install shared aliases
 
+## Local overrides
+
+Any config you don't want stored in the repo, such as environment variables or local aliases can be put in a file `~/.localrc`.
+
 ## Adding Aliases
 
 Add your aliases to `shared/aliases`. This file is sourced by all shells, so you can write aliases that work across bash, zsh, and fish.
