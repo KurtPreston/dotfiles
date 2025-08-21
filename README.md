@@ -46,16 +46,7 @@ Any config you don't want stored in the repo, such as environment variables or l
 
 Add your aliases to `shared/aliases`. This file is sourced by all shells, so you can write aliases that work across bash, zsh, and fish.
 
-## Shell-Specific Configuration
-
+For functions designed to work in a specific shell,
 - **Bash**: Add bash-specific configuration to `bash/bashrc` or `bash/bash_profile`
 - **Zsh**: Add zsh-specific configuration to `zsh/zshrc`
 - **Fish**: Add fish-specific configuration to `fish/config.fish`
-
-## Features
-
-- ✅ Simple installation with `./install.sh`
-- ✅ Organized file structure
-- ✅ Cross-shell compatibility (bash, zsh, fish)
-- ✅ Shared aliases to avoid redundancy
-- ✅ Automatic backup of existing configuration 
