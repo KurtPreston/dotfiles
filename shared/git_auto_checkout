@@ -1,0 +1,54 @@
+# Git Auto-Checkout functionality
+# This file is sourced by bash and zsh
+# Automatically checks out matching local branches when on detached HEAD
+
+# Auto-checkout matching branch if on detached HEAD
+git_auto_checkout() {
+    # Only run if we're in a git repository
+    if ! git rev-parse --git-dir >/dev/null 2>&1; then
+        return 0
+    fi
+    
+    local gitver=$(git branch 2>/dev/null | sed -n '/^\*/s/^\* //p')
+    
+    # If we're on a detached HEAD (gitver will be like "(HEAD detached at abc1234)")
+    if [[ "$gitver" =~ ^\(HEAD\ detached\ at\ ([a-f0-9]+)\)$ ]]; then
+        local current_sha=$(git rev-parse HEAD 2>/dev/null)
+        
+        # Check if current SHA matches any local branch
+        local matching_branch=$(git for-each-ref --format='%(refname:short)' refs/heads/ 2>/dev/null | while read branch; do
+            if [[ "$(git rev-parse "$branch" 2>/dev/null)" == "$current_sha" ]]; then
+                echo "$branch"
+                break
+            fi
+        done)
+        
+        if [[ -n "$matching_branch" ]]; then
+            # Auto-checkout the matching branch silently
+            local short_sha=$(git rev-parse --short HEAD 2>/dev/null)
+            echo "Detached HEAD $short_sha matches branch '$matching_branch'. Checking out..."
+            git checkout "$matching_branch" >/dev/null 2>&1
+        fi
+    fi
+}
+
+# Set up auto-switching hooks based on shell type
+if [ -n "$ZSH_VERSION" ]; then
+    # Zsh hook
+    autoload -U add-zsh-hook
+    add-zsh-hook chpwd git_auto_checkout
+elif [ -n "$BASH_VERSION" ]; then
+    # Bash hook using PROMPT_COMMAND
+    __git_auto_checkout_wrapper() {
+        local exit_code=$?
+        git_auto_checkout
+        return $exit_code
+    }
+    
+    if [[ ":$PROMPT_COMMAND:" != *":__git_auto_checkout_wrapper:"* ]]; then
+        PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND; }__git_auto_checkout_wrapper"
+    fi
+fi
+
+# Run once on shell startup for current directory
+git_auto_checkout

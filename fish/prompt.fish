@@ -18,14 +18,39 @@ function parse_git_branch
     if command -v timeout >/dev/null
         timeout 1s git rev-parse --git-dir >/dev/null 2>&1
         if test $status -eq 0
-            timeout 1s git branch 2>/dev/null | sed -n '/^\*/s/^\* //p' | head -1
+            set gitver (timeout 1s git branch 2>/dev/null | sed -n '/^\*/s/^\* //p' | head -1)
         end
     else
         # Fallback without timeout
         if git rev-parse --git-dir >/dev/null 2>&1
-            git branch 2>/dev/null | sed -n '/^\*/s/^\* //p' | head -1
+            set gitver (git branch 2>/dev/null | sed -n '/^\*/s/^\* //p' | head -1)
         end
     end
+    
+    # If we're on a detached HEAD (gitver will be like "(HEAD detached at abc1234)")
+    if test -n "$gitver"; and string match -rq '^\(HEAD detached at [a-f0-9]+\)$' "$gitver"
+        set current_sha (git rev-parse HEAD 2>/dev/null)
+        set short_sha (git rev-parse --short HEAD 2>/dev/null)
+        if test -n "$current_sha"
+            # Check if current SHA matches any local branch
+            set matching_branch ""
+            for branch in (git for-each-ref --format='%(refname:short)' refs/heads/ 2>/dev/null)
+                set branch_sha (git rev-parse "$branch" 2>/dev/null)
+                if test "$branch_sha" = "$current_sha"
+                    set matching_branch "$branch"
+                    break
+                end
+            end
+            
+            if test -n "$matching_branch"
+                set gitver "$matching_branch (detached)"
+            else
+                set gitver "$short_sha (detached)"
+            end
+        end
+    end
+    
+    echo "$gitver"
 end
 
 # Get branch color based on git status with timeout
