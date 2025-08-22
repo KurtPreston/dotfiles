@@ -14,5 +14,10 @@ alias gs='git status'
 alias gl='git log --oneline'
 alias gsi='git stash-index'
 
+# git branch clean aliases
+alias gbc='git-branch-clean'
+alias gbcl='git-branch-clean-local'
+alias gbcr='git-branch-clean-remote'
+
 # ls aliases
 alias l='ls -al'

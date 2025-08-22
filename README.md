@@ -44,6 +44,9 @@ Simple terminal prompt showing git branch, user, and dir.
 | `gl` | `git log --oneline` | Show commit history in one line |
 | `grr` | `git_recursive_reset` | Aggressively reset project and submodules |
 | `gsi` | `git stash-index` | Stashes currently staged code |
+| `gbc` | `git-branch-clean` | Clean local and remote merged branches |
+| `gbcl` | `git-branch-clean-local` | Clean local merged branches only |
+| `gbcr` | `git-branch-clean-remote` | Clean remote merged branches only |
 | `cr` | `cd_git_root` | Change to git repository root |
 | `l` | `ls -al` | List all files with details |
 | `reload` | `source ~/.dotfiles/*/config` | Reload shell configuration |
@@ -61,6 +64,7 @@ Simple terminal prompt showing git branch, user, and dir.
 ```
 dotfiles/
 ├── install.sh          # Installation script
+├── bin/                # Executable scripts
 ├── bash/               # Bash-specific configuration
 │   ├── bashrc         # Non-login shell configuration
 │   └── bash_profile   # Login shell configuration

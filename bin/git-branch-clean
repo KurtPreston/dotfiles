@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Git Branch Clean
+# Cleans out local and remote branches, then runs git gc
+
+# Run local branch cleanup
+echo "Cleaning local branches..."
+git-branch-clean-local
+
+# Run remote branch cleanup
+echo "Cleaning remote branches..."
+git-branch-clean-remote
+
+# Run git gc
+echo "Running git gc..."
+git gc

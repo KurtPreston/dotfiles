@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Git Branch Clean Remote
+# Clears out all remote branches that have already been merged
+
+# Fetch remote branches and clear refs to deleted ones
+git fetch --prune
+
+if [ $? -eq 0 ]; then
+  echo "Checkout successful -- Updating/cleaning code"
+
+  branches_to_delete="$(git branch -r --merged | grep -v '^\*' | grep -v 'origin/master' | grep -v 'origin/main' | grep -v 'origin/staging' | grep -v 'origin/release' | grep 'origin/' | sed 's/origin\///g')"
+  if [[ "$branches_to_delete" == "" ]]; then
+    echo "No remote branches to delete"
+  else
+    echo $branches_to_delete | xargs git push --delete origin
+  fi
+else
+  echo "Checkout unsuccessful -- Commit any working changes"
+fi

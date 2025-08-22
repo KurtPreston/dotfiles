@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Git Branch Clean Local
+# Clears out all local git branches that have already been merged into the active branch
+
+# Define protected branches (these will not be cleaned)
+branches_to_delete="$( git branch --merged | grep -v '^\*' | grep -v 'master' | grep -v 'main' | grep -v 'staging' | grep -v '^release' )"
+if [[ "$branches_to_delete" == "" ]]; then
+  echo "No branches to delete"
+else
+  echo $branches_to_delete | xargs git branch -d
+fi
