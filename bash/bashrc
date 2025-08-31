@@ -25,4 +25,7 @@ fi
 # Source tab completion functions (after local config to use any CODE_HOME override)
 source ~/.dotfiles/bash/tabcomplete
 
+# Source keybindings
+source ~/.dotfiles/bash/keybindings
+
 # Bash-specific configuration can be added here 

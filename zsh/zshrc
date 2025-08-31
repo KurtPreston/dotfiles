@@ -25,4 +25,7 @@ fi
 # Source tab completion functions (after local config to use any CODE_HOME override)
 source ~/.dotfiles/zsh/tabcomplete
 
+# Source keybindings
+source ~/.dotfiles/zsh/keybindings
+
 # Zsh-specific configuration can be added here 
