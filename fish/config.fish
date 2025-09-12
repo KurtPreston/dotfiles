@@ -46,4 +46,7 @@ end
 # Source fish prompt configuration
 source ~/.dotfiles/fish/prompt.fish
 
+# Source keybindings
+source ~/.dotfiles/fish/keybindings
+
 # Fish-specific configuration can be added here 

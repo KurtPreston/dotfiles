@@ -29,4 +29,7 @@ for file in ~/.dotfiles/bash/tabcomplete*; do
     fi
 done
 
+# Source keybindings
+source ~/.dotfiles/bash/keybindings
+
 # Bash-specific configuration can be added here 

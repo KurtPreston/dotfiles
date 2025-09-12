@@ -1,0 +1,14 @@
+# Word navigation keybindings
+# Option+Left (backward-word)
+bindkey '^[b' backward-word
+bindkey '^[[1;3D' backward-word
+bindkey '^[^[[D' backward-word
+
+# Option+Right (forward-word)
+bindkey '^[f' forward-word
+bindkey '^[[1;3C' forward-word
+bindkey '^[^[[C' forward-word
+
+# Additional common sequences that might be sent
+bindkey '^[[1;5D' backward-word  # Ctrl+Left
+bindkey '^[[1;5C' forward-word   # Ctrl+Right

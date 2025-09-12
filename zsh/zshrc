@@ -27,4 +27,7 @@ for file in ~/.dotfiles/zsh/tabcomplete*; do
     source "$file"
 done
 
+# Source keybindings
+source ~/.dotfiles/zsh/keybindings
+
 # Zsh-specific configuration can be added here 
