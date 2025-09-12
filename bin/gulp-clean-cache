@@ -1,0 +1,10 @@
+#!/bin/bash
+# Shared script to clean old gulp cache files
+# Used by bash, fish, and zsh tab completion
+
+gulp_cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles-gulp"
+
+if [[ -d "$gulp_cache_dir" ]]; then
+    # Remove cache files older than 7 days
+    find "$gulp_cache_dir" -type f -mtime +7 -delete 2>/dev/null
+fi

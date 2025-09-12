@@ -1,0 +1,19 @@
+#!/bin/bash
+# Shared script to refresh gulp cache in background
+# Used by bash, fish, and zsh tab completion
+
+cache_file="$1"
+temp_file="${cache_file}.tmp"
+
+# Run gulp -T and extract task names
+# gulp -T output format: "├── task-name  Description" or "├─┬ task-name"
+# We want to extract just the task names from both simple and composite tasks
+if command -v gulp >/dev/null 2>&1; then
+    {
+        gulp -T 2>/dev/null | \
+        grep -E "^[├└]─" | \
+        sed -E 's/^[├└]─[─┬] ([^ ]+).*/\1/' | \
+        grep -v "^$" > "$temp_file" && \
+        mv "$temp_file" "$cache_file"
+    } 2>/dev/null
+fi

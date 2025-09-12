@@ -1,0 +1,42 @@
+#!/bin/bash
+# Shared script to get gulp tasks with caching
+# Used by bash, fish, and zsh tab completion
+
+# Cache directory for gulp task lists
+GULP_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles-gulp"
+
+cache_file="$GULP_CACHE_DIR/$(pwd | sed 's|/|_|g')"
+gulpfile=""
+
+# Check if we're in a directory with a gulpfile
+if [[ -f "gulpfile.js" ]]; then
+    gulpfile="gulpfile.js"
+elif [[ -f "gulpfile.mjs" ]]; then
+    gulpfile="gulpfile.mjs"
+elif [[ -f "gulpfile.ts" ]]; then
+    gulpfile="gulpfile.ts"
+elif [[ -f "gulpfile.babel.js" ]]; then
+    gulpfile="gulpfile.babel.js"
+elif [[ -f "Gulpfile.js" ]]; then
+    gulpfile="Gulpfile.js"
+else
+    # No gulpfile found, exit with error
+    exit 1
+fi
+
+# Create cache directory if it doesn't exist
+mkdir -p "$GULP_CACHE_DIR"
+
+# Check if cache exists and is newer than gulpfile
+if [[ -f "$cache_file" && "$cache_file" -nt "$gulpfile" ]]; then
+    # Use cached tasks
+    cat "$cache_file" 2>/dev/null
+else
+    # Start background task to refresh cache
+    "$HOME/.dotfiles/bin/gulp-refresh-cache" "$cache_file" &
+    
+    # Return cached tasks if available, otherwise empty
+    if [[ -f "$cache_file" ]]; then
+        cat "$cache_file" 2>/dev/null
+    fi
+fi
