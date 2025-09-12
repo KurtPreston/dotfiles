@@ -22,7 +22,11 @@ if [[ -f ~/.localrc ]]; then
     source ~/.localrc
 fi
 
-# Source tab completion functions (after local config to use any CODE_HOME override)
-source ~/.dotfiles/bash/tabcomplete
+# Source tab completion functions (after local config to use any env var overrides)
+for file in ~/.dotfiles/bash/tabcomplete*; do
+    if [[ "$file" != ~/.dotfiles/shared/env ]]; then
+        source "$file"
+    fi
+done
 
 # Bash-specific configuration can be added here 

@@ -1,0 +1,97 @@
+# Gulp tab completion for bash
+# This provides tab completion for gulp tasks by running `gulp -T` in the background
+
+# Cache directory for gulp task lists
+GULP_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles-gulp"
+
+# Function to get cached gulp tasks or trigger background refresh
+_get_gulp_tasks() {
+    local cache_file="$GULP_CACHE_DIR/$(pwd | sed 's|/|_|g')"
+    local gulpfile=""
+    
+    # Check if we're in a directory with a gulpfile
+    if [[ -f "gulpfile.js" ]]; then
+        gulpfile="gulpfile.js"
+    elif [[ -f "gulpfile.mjs" ]]; then
+        gulpfile="gulpfile.mjs"
+    elif [[ -f "gulpfile.ts" ]]; then
+        gulpfile="gulpfile.ts"
+    elif [[ -f "gulpfile.babel.js" ]]; then
+        gulpfile="gulpfile.babel.js"
+    elif [[ -f "Gulpfile.js" ]]; then
+        gulpfile="Gulpfile.js"
+    else
+        # No gulpfile found, return empty
+        return 1
+    fi
+    
+    # Create cache directory if it doesn't exist
+    mkdir -p "$GULP_CACHE_DIR"
+    
+    # Check if cache exists and is newer than gulpfile
+    if [[ -f "$cache_file" && "$cache_file" -nt "$gulpfile" ]]; then
+        # Use cached tasks
+        cat "$cache_file" 2>/dev/null
+    else
+        # Start background task to refresh cache
+        _refresh_gulp_cache_async "$cache_file" &
+        
+        # Return cached tasks if available, otherwise empty
+        if [[ -f "$cache_file" ]]; then
+            cat "$cache_file" 2>/dev/null
+        fi
+    fi
+}
+
+# Function to refresh gulp cache in background
+_refresh_gulp_cache_async() {
+    local cache_file="$1"
+    local temp_file="${cache_file}.tmp"
+    
+    # Run gulp -T and extract task names
+    # gulp -T output format: "├── task-name  Description" or "├─┬ task-name"
+    # We want to extract just the task names from both simple and composite tasks
+    if command -v gulp >/dev/null 2>&1; then
+        {
+            gulp -T 2>/dev/null | \
+            grep -E "^[├└]─" | \
+            sed -E 's/^[├└]─[─┬] ([^ ]+).*/\1/' | \
+            grep -v "^$" > "$temp_file" && \
+            mv "$temp_file" "$cache_file"
+        } 2>/dev/null
+    fi
+}
+
+# Main completion function for gulp
+_gulp_completion() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    local prev="${COMP_WORDS[COMP_CWORD-1]}"
+    
+    # Only provide task completion for the first argument after 'gulp'
+    # or when the previous argument is a gulp option that expects a task
+    if [[ $COMP_CWORD -eq 1 ]] || [[ "$prev" =~ ^--(task|series|parallel)$ ]]; then
+        local tasks
+        tasks=$(_get_gulp_tasks)
+        
+        if [[ -n "$tasks" ]]; then
+            COMPREPLY=($(compgen -W "$tasks" -- "$cur"))
+        fi
+    else
+        # For other positions, provide file completion as fallback
+        COMPREPLY=($(compgen -f -- "$cur"))
+    fi
+}
+
+# Function to clean old cache files (optional maintenance)
+_clean_gulp_cache() {
+    if [[ -d "$GULP_CACHE_DIR" ]]; then
+        # Remove cache files older than 7 days
+        find "$GULP_CACHE_DIR" -type f -mtime +7 -delete 2>/dev/null
+    fi
+}
+
+# Register completion for gulp command
+complete -F _gulp_completion gulp
+
+# Clean old cache files when this script is sourced (runs once per shell session)
+_clean_gulp_cache
