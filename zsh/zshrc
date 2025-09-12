@@ -23,6 +23,8 @@ if [[ -f ~/.localrc ]]; then
 fi
 
 # Source tab completion functions (after local config to use any CODE_HOME override)
-source ~/.dotfiles/zsh/tabcomplete
+for file in ~/.dotfiles/zsh/tabcomplete*; do
+    source "$file"
+done
 
 # Zsh-specific configuration can be added here 

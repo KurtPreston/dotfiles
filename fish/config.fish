@@ -39,7 +39,9 @@ if test -f ~/.localrc
 end
 
 # Source tab completion functions (after local config to use any CODE_HOME override)
-source ~/.dotfiles/fish/tabcomplete
+for file in ~/.dotfiles/fish/tabcomplete*
+    source $file
+end
 
 # Source fish prompt configuration
 source ~/.dotfiles/fish/prompt.fish
