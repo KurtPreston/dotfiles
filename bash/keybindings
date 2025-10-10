@@ -1,12 +1,16 @@
 # Word navigation keybindings
-# Option+Left (backward-word)
-bind '"\e[1;3D": backward-word'
-bind '"\eb": backward-word'
+# Only set keybindings in interactive shells
+# The $- variable contains shell options; 'i' means interactive
+if [[ $- == *i* ]]; then
+    # Option+Left (backward-word)
+    bind '"\e[1;3D": backward-word'
+    bind '"\eb": backward-word'
 
-# Option+Right (forward-word)
-bind '"\e[1;3C": forward-word'
-bind '"\ef": forward-word'
+    # Option+Right (forward-word)
+    bind '"\e[1;3C": forward-word'
+    bind '"\ef": forward-word'
 
-# Additional common sequences that might be sent
-bind '"\e[1;5D": backward-word'  # Ctrl+Left
-bind '"\e[1;5C": forward-word'   # Ctrl+Right
+    # Additional common sequences that might be sent
+    bind '"\e[1;5D": backward-word'  # Ctrl+Left
+    bind '"\e[1;5C": forward-word'   # Ctrl+Right
+fi
