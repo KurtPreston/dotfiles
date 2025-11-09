@@ -22,6 +22,10 @@ if [[ -f ~/.localrc ]]; then
     source ~/.localrc
 fi
 
+# Initialize completion system (required for compdef to work, especially in older zsh versions)
+autoload -Uz compinit
+compinit
+
 # Source tab completion functions (after local config to use any CODE_HOME override)
 for file in ~/.dotfiles/zsh/tabcomplete*; do
     source "$file"

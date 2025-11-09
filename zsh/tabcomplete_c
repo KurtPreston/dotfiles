@@ -13,5 +13,7 @@ _c_completion() {
     fi
 }
 
-# Register completion for the 'c' alias
-compdef _c_completion c
+# Register completion for the 'c' alias (only if compdef is available)
+if (( $+functions[compdef] )); then
+    compdef _c_completion c
+fi
