@@ -39,8 +39,10 @@ _clean_gulp_cache() {
     "$HOME/.dotfiles/bin/gulp-clean-cache"
 }
 
-# Register completion for gulp command
-compdef _gulp_completion gulp
+# Register completion for gulp command (only if compdef is available)
+if (( $+functions[compdef] )); then
+    compdef _gulp_completion gulp
+fi
 
 # Clean old cache files when this script is sourced (runs once per shell session)
 _clean_gulp_cache

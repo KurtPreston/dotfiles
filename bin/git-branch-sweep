@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# Git Branch Sweep
+# Interactively review and delete local git branches
+
+# Get all local branches except master, main, and release*
+branches_to_review=$(git branch --format='%(refname:short)' | grep -v '^master$' | grep -v '^main$' | grep -v '^release')
+
+# Get current branch to avoid deleting it
+current_branch=$(git branch --show-current)
+
+if [[ "$branches_to_review" == "" ]]; then
+  echo "No branches to review"
+  exit 0
+fi
+
+echo "==================================="
+echo "Git Branch Sweep"
+echo "==================================="
+echo ""
+
+# Calculate cutoff date (1 month ago in seconds)
+one_month_ago=$(($(date +%s) - 2592000))
+
+# Process each branch
+while IFS= read -r branch; do
+  # Skip current branch
+  if [[ "$branch" == "$current_branch" ]]; then
+    continue
+  fi
+
+  # Get branch information
+  commit_timestamp=$(git log -1 --format="%ct" "$branch" 2>/dev/null)
+  
+  # Skip branches newer than 1 month
+  if [[ "$commit_timestamp" -gt "$one_month_ago" ]]; then
+    continue
+  fi
+
+  commit_time=$(git log -1 --format="%ci" "$branch" 2>/dev/null)
+  commit_time_relative=$(git log -1 --format="%cr" "$branch" 2>/dev/null)
+  commit_message=$(git log -1 --format="%s" "$branch" 2>/dev/null)
+  commit_author=$(git log -1 --format="%an" "$branch" 2>/dev/null)
+
+  # Display branch information
+  echo "-----------------------------------"
+  echo "Branch: $branch"
+  echo "Last Commit: $commit_time ($commit_time_relative)"
+  echo "Author: $commit_author"
+  echo "Message: $commit_message"
+  echo ""
+
+  # Prompt for deletion
+  read -n 1 -p "Delete this branch? [y/N]: " -r response </dev/tty
+  echo "" # Add newline after single character input
+  case "$response" in
+    [yY])
+      git branch -D "$branch"
+      if [[ $? -eq 0 ]]; then
+        echo "✓ Deleted branch: $branch"
+      else
+        echo "✗ Failed to delete branch: $branch"
+      fi
+      ;;
+    *)
+      echo "Kept branch: $branch"
+      ;;
+  esac
+  echo ""
+done <<< "$branches_to_review"
+
+echo "==================================="
+echo "Branch sweep complete!"
+echo "==================================="
+

@@ -5,7 +5,7 @@
   co = checkout
   br = branch
   st = status
-  rb = !sh -c 'git fetch &&  git checkout --track -b $0 origin/$0'
+  rb = !sh -c 'git fetch && (git show-ref --verify --quiet refs/heads/$0 && git checkout $0 || git checkout --track -b $0 origin/$0)'
   rl = branch -a
   lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
   sup = !sh -c 'git submodule update --init --recursive && git submodule status'
