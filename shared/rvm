@@ -1,0 +1,9 @@
+# Load RVM if available
+# This file is sourced by bash and zsh
+
+# Prefer user install, fall back to system
+if [ -s "$HOME/.rvm/scripts/rvm" ]; then
+    \. "$HOME/.rvm/scripts/rvm"
+elif [ -s "/usr/local/rvm/scripts/rvm" ]; then
+    \. "/usr/local/rvm/scripts/rvm"
+fi
