@@ -9,22 +9,38 @@ export NVM_DIR="$HOME/.nvm"
 \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
-# Auto-switch node version based on .nvmrc
+# Auto-switch node version based on .nvmrc, or package.json engines.node (via jq)
 nvm_auto_use() {
-    if [ -f ".nvmrc" ] && command -v nvm > /dev/null 2>&1; then
-        local nvmrc_version=$(cat .nvmrc | tr -d '[:space:]')
-        local current_version=$(nvm current 2>/dev/null)
-        local target_version=$(nvm version "$nvmrc_version" 2>/dev/null)
-        
-        # If target resolves to current version, we're already on it — do nothing
-        if [ -n "$target_version" ] && [ "$target_version" = "$current_version" ]; then
-            return
-        fi
-        
-        if [ "$target_version" != "$current_version" ]; then
-            echo "Found .nvmrc with version $nvmrc_version. Switching from $current_version..."
-            nvm use "$nvmrc_version"
-        fi
+    if ! command -v nvm > /dev/null 2>&1; then
+        return
+    fi
+
+    local target_spec=""
+    local source_label=""
+
+    if [ -f ".nvmrc" ]; then
+        target_spec=$(tr -d '[:space:]' < .nvmrc)
+        source_label=".nvmrc"
+    elif [ -f "package.json" ] && command -v jq > /dev/null 2>&1; then
+        target_spec=$(jq -r '.engines.node // empty' package.json 2>/dev/null | tr -d '[:space:]')
+        [ -n "$target_spec" ] && source_label="package.json engines.node"
+    fi
+
+    if [ -z "$target_spec" ]; then
+        return
+    fi
+
+    local current_version=$(nvm current 2>/dev/null)
+    local target_version=$(nvm version "$target_spec" 2>/dev/null)
+
+    # If target resolves to current version, we're already on it — do nothing
+    if [ -n "$target_version" ] && [ "$target_version" = "$current_version" ]; then
+        return
+    fi
+
+    if [ "$target_version" != "$current_version" ]; then
+        echo "Found $source_label with version $target_spec. Switching from $current_version..."
+        nvm use "$target_spec"
     fi
 }
 
