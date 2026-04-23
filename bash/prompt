@@ -11,6 +11,14 @@ c_white=`tty -s && tput setaf 7`
 
 c_bold=`tty -s && tput bold`
 
+# Readline non-printing markers. Bash converts \[ and \] in the PS1 *template*
+# to these two bytes, but that conversion happens BEFORE command substitution
+# runs, so any \[ / \] emitted from $(...) at prompt time is treated as
+# literal text. Emitting \001/\002 directly from helpers keeps readline's
+# column tracking correct and prevents the wrapping/cursor-drift corruption.
+np_start=$'\001'
+np_end=$'\002'
+
 parse_git_branch ()
 {
   if git rev-parse --git-dir >/dev/null 2>&1; then
@@ -44,34 +52,35 @@ parse_git_branch ()
 branch_color ()
 {
   if git rev-parse --git-dir >/dev/null 2>&1; then
-    color=""
-    if git diff --quiet 2>/dev/null >&2
-      then
-        color="${c_green}"
+    if git diff --quiet 2>/dev/null >&2; then
+      printf '%s' "${c_green}"
     else
-      color=${c_red}
+      printf '%s' "${c_red}"
     fi
-  else
-    return 0
   fi
-
-  echo -ne $color
 }
 
-git_prompt ()
+git_prompt_segment ()
 {
-  echo -ne '$(if [ -n "$(parse_git_branch)" ]; then echo "[\[$(branch_color)\]$(parse_git_branch)\[${c_default}\]] "; fi)'
+  local branch
+  branch=$(parse_git_branch)
+  if [[ -n "$branch" ]]; then
+    local color
+    color=$(branch_color)
+    printf '[%s%s%s%s%s%s] ' "$np_start" "$color" "$np_end" "$branch" "$np_start" "${c_default}${np_end}"
+  fi
 }
 
 show_host_if_remote ()
 {
-  if [[ ! -z "$SSH_CONNECTION" ]]; then
-    echo -ne '\[${c_blue}\]$(hostname)\[${c_default}\]'
-  else
-    return 0
+  if [[ -n "$SSH_CONNECTION" ]]; then
+    printf '%s%s%s%s' "$np_start" "${c_blue}" "$np_end" "$(hostname)"
+    printf '%s%s%s' "$np_start" "${c_default}" "$np_end"
   fi
 }
 
+# These helpers only ever run when PS1 is assigned, so they can safely use
+# the \[ / \] form that bash decodes in the template.
 show_colored_user ()
 {
   if [[ "$(whoami)" = "root" ]]; then
@@ -86,4 +95,4 @@ show_path ()
   echo -ne '\[${c_cyan}\]\w'
 }
 
-PS1="$(git_prompt)$(show_colored_user)@$(show_host_if_remote)$(show_path)\[${c_default}\]: " 
+PS1='$(git_prompt_segment)'"$(show_colored_user)"'@$(show_host_if_remote)'"$(show_path)"'\[${c_default}\]: '
