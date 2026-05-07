@@ -33,6 +33,17 @@ if test -s ~/.nvm/nvm.sh
     end
 end
 
+# Load RVM if available (Fish shell approach)
+if type -q bass
+    if test -s ~/.rvm/scripts/rvm
+        bass source ~/.rvm/scripts/rvm
+        bass rvm default
+    else if test -s /usr/local/rvm/scripts/rvm
+        bass source /usr/local/rvm/scripts/rvm
+        bass rvm default
+    end
+end
+
 # Source local configuration if it exists (before tab completion to allow CODE_HOME override)
 if test -f ~/.localrc
     source ~/.localrc
