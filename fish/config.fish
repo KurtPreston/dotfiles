@@ -44,6 +44,11 @@ if type -q bass
     end
 end
 
+# Load rbenv if available
+if type -q rbenv
+    rbenv init - fish | source
+end
+
 # Source local configuration if it exists (before tab completion to allow CODE_HOME override)
 if test -f ~/.localrc
     source ~/.localrc
@@ -60,4 +65,4 @@ source ~/.dotfiles/fish/prompt.fish
 # Source keybindings
 source ~/.dotfiles/fish/keybindings
 
-# Fish-specific configuration can be added here 
+# Fish-specific configuration can be added here
