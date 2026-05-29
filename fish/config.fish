@@ -33,6 +33,9 @@ if test -s ~/.nvm/nvm.sh
     end
 end
 
+# Auto-switch node version on cd (uses fisher nvm plugin)
+source ~/.dotfiles/fish/nvm.fish
+
 # Load RVM if available (Fish shell approach)
 if type -q bass
     if test -s ~/.rvm/scripts/rvm
