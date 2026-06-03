@@ -1,7 +1,23 @@
 # fzf integration for fish
 # Key bindings require either fzf.fish (fisher install PatrickF1/fzf.fish)
 # or the minimal Ctrl+R binding defined below.
-# No-op if fzf is not installed.
+# Key bindings are a no-op when fzf is not installed; gcof is always defined
+# and reports a clear error when fzf is missing (matching bash/zsh).
+
+# gcof: interactive git branch checkout using fzf
+function gcof --description "Fuzzy git branch checkout"
+    if not type -q fzf
+        echo "gcof: fzf not installed" >&2
+        return 1
+    end
+    set -l branch (git branch --all \
+        | grep -v HEAD \
+        | string replace -r '^[*+]?\s*' '' \
+        | string replace -r '^remotes/origin/' '' \
+        | sort -u \
+        | fzf --height 40% --border --prompt="checkout: ")
+    test -n "$branch"; and git checkout $branch
+end
 
 if not type -q fzf
     exit
@@ -26,14 +42,3 @@ function _fzf_history --description "Fuzzy history search"
 end
 
 bind \cr _fzf_history
-
-# gcof: interactive git branch checkout using fzf
-function gcof --description "Fuzzy git branch checkout"
-    set -l branch (git branch --all \
-        | grep -v HEAD \
-        | string trim \
-        | string replace -r '^remotes/origin/' '' \
-        | sort -u \
-        | fzf --height 40% --border --prompt="checkout: ")
-    test -n "$branch"; and git checkout $branch
-end
