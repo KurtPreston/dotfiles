@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Interactive diff filter for git add -p: uses delta when available, falls back to cat
+if command -v delta &>/dev/null; then
+    exec delta --color-only "$@"
+else
+    exec cat
+fi

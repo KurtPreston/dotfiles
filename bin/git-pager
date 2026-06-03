@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Git pager: uses delta when available, falls back to less -S
+if command -v delta &>/dev/null; then
+    exec delta "$@"
+else
+    exec less -S "$@"
+fi
