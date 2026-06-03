@@ -71,4 +71,7 @@ source ~/.dotfiles/fish/prompt.fish
 # Source keybindings
 source ~/.dotfiles/fish/keybindings
 
+# Merge history from other sessions on startup so Ctrl+R sees recent commands
+builtin history merge 2>/dev/null
+
 # Fish-specific configuration can be added here
