@@ -79,5 +79,10 @@ esac
 echo -e "${GREEN}Setting up Git configuration...${NC}"
 "$DOTFILES_DIR/git/setup_gitconfig.sh"
 
+# Check optional dependencies
+echo
+"$DOTFILES_DIR/check-dependencies.sh"
+
+echo
 echo -e "${GREEN}Installation complete!${NC}"
 echo -e "${YELLOW}Please restart your shell or run 'source ~/.${CURRENT_SHELL}rc' to apply changes.${NC}" 
