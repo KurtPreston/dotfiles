@@ -62,6 +62,9 @@ for file in ~/.dotfiles/fish/tabcomplete*
     source $file
 end
 
+# Source fzf integration (no-op if fzf not installed)
+source ~/.dotfiles/fish/fzf.fish
+
 # Source fish prompt configuration
 source ~/.dotfiles/fish/prompt.fish
 
