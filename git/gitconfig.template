@@ -25,7 +25,7 @@
   excludesfile = ~/.gitignore
   editor = vim
   autocrlf = input
-  pager = less -S
+  pager = git-pager
 [apply]
   whitespace = nowarn
 [format]
@@ -35,5 +35,11 @@
 [push]
   default = tracking
   recurseSubmodules = check
+[interactive]
+  diffFilter = git-delta-filter
+[delta]
+  navigate = true
+  line-numbers = true
+  side-by-side = false
 [pull]
 	rebase = false
