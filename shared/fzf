@@ -1,0 +1,69 @@
+# fzf integration for bash and zsh
+# Enables fuzzy history search (Ctrl+R), file search (Ctrl+T), and cd (Alt+C)
+# No-op if fzf is not installed.
+
+if command -v fzf &>/dev/null; then
+    export FZF_DEFAULT_OPTS='--height 40% --border --inline-info'
+
+    if [[ -n "$BASH_VERSION" ]]; then
+        # Try each candidate until fzf's Ctrl+R widget is actually loaded.
+        # A candidate (e.g. a stale ~/.fzf.bash) that fails to define the
+        # widget must not stop us from trying the next one, so we check that
+        # __fzf_history__ exists rather than just stopping on first source.
+        for _fzf_src in \
+            ~/.fzf.bash \
+            /opt/homebrew/opt/fzf/shell/key-bindings.bash \
+            /usr/share/doc/fzf/examples/key-bindings.bash \
+            /usr/share/fzf/key-bindings.bash \
+            /usr/share/fzf/shell/key-bindings.bash; do
+            declare -F __fzf_history__ &>/dev/null && break
+            [[ -r "$_fzf_src" ]] && source "$_fzf_src" 2>/dev/null
+        done
+
+        # Completion is optional and loaded separately so a failure here can't
+        # prevent the key bindings above from taking effect.
+        for _fzf_src in \
+            /opt/homebrew/opt/fzf/shell/completion.bash \
+            /usr/share/doc/fzf/examples/completion.bash \
+            /usr/share/fzf/completion.bash; do
+            [[ -r "$_fzf_src" ]] && source "$_fzf_src" 2>/dev/null && break
+        done
+        unset _fzf_src
+    fi
+
+    if [[ -n "$ZSH_VERSION" ]]; then
+        for _fzf_src in \
+            ~/.fzf.zsh \
+            /opt/homebrew/opt/fzf/shell/key-bindings.zsh \
+            /usr/share/doc/fzf/examples/key-bindings.zsh \
+            /usr/share/fzf/key-bindings.zsh \
+            /usr/share/fzf/shell/key-bindings.zsh; do
+            (( $+functions[fzf-history-widget] )) && break
+            [[ -r "$_fzf_src" ]] && source "$_fzf_src" 2>/dev/null
+        done
+
+        for _fzf_src in \
+            /opt/homebrew/opt/fzf/shell/completion.zsh \
+            /usr/share/doc/fzf/examples/completion.zsh \
+            /usr/share/fzf/completion.zsh; do
+            [[ -r "$_fzf_src" ]] && source "$_fzf_src" 2>/dev/null && break
+        done
+        unset _fzf_src
+    fi
+fi
+
+# Interactive git branch checkout using fzf; falls back to plain git checkout
+gcof() {
+    if ! command -v fzf &>/dev/null; then
+        echo "gcof: fzf not installed" >&2
+        return 1
+    fi
+    local branch
+    branch=$(git branch --all \
+        | grep -v HEAD \
+        | sed 's/^[*+[:space:]]*//' \
+        | sed 's|^remotes/origin/||' \
+        | sort -u \
+        | fzf --height 40% --border --prompt="checkout: ")
+    [[ -n "$branch" ]] && git checkout "$branch"
+}
