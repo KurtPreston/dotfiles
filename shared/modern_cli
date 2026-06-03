@@ -1,0 +1,12 @@
+# Modern CLI tool aliases for bash and zsh
+# Each alias only applies when the replacement tool is installed.
+
+# ripgrep: faster grep with smarter defaults (respects .gitignore, etc.)
+if command -v rg &>/dev/null; then
+    alias grep='rg'
+fi
+
+# fd: faster, friendlier find
+if command -v fd &>/dev/null; then
+    alias find='fd'
+fi

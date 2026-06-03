@@ -21,6 +21,9 @@ source ~/.dotfiles/fish/aliases
 # Source fish-specific functions
 source ~/.dotfiles/fish/functions.fish
 
+# Source modern CLI tool aliases (rg, fd) with fallbacks
+source ~/.dotfiles/fish/modern_cli.fish
+
 # Load NVM if available (Fish shell approach)
 if test -s ~/.nvm/nvm.sh
     # For Fish, we need to use bass to run nvm commands or use fisher nvm plugin
