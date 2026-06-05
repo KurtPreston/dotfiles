@@ -56,8 +56,10 @@ Simple terminal prompt showing git branch, user, and dir.
 | Function | Description |
 |----------|-------------|
 | `killport <PORT>` | Kill process listening on a specific port |
-| `git_recursive_reset` | Aggressively reset project and submodules |
+| `git_recursive_reset` | Aggressively reset project and submodules (honors `$GRR_IGNORE`) |
 | `git stash-index` | Stashes currently staged code |
+
+> **`git_recursive_reset` / `grr`**: Set the `GRR_IGNORE` environment variable to a colon-separated list of filenames or patterns that should never be removed by `git clean`. This is useful for keeping machine-specific files. For example, add `export GRR_IGNORE="myPersistentConfig.json:local-notes.md"` to your local shell config. The defaults (`.env` and `.vscode/settings.json`) are always preserved.
 
 ## Structure
 

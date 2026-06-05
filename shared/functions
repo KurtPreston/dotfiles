@@ -24,8 +24,21 @@ function git_recursive_reset() {
   git reset --hard
   git submodule foreach --recursive git reset --hard
 
+  # Build clean excludes: always keep env/editor config, plus any filenames
+  # listed in $GRR_IGNORE (colon-separated) so a machine can preserve its own
+  # persistent files (e.g. GRR_IGNORE="myPersistentConfig.json:secrets.yml").
+  local clean_excludes=(-e .env -e .vscode/settings.json)
+  if [ -n "$GRR_IGNORE" ]; then
+    local _grr_old_ifs="$IFS"
+    IFS=':'
+    for pattern in $GRR_IGNORE; do
+      [ -n "$pattern" ] && clean_excludes+=(-e "$pattern")
+    done
+    IFS="$_grr_old_ifs"
+  fi
+
   # Remove any lingering files or folders
-  git clean -xffd -e .env -e .vscode/settings.json
+  git clean -xffd "${clean_excludes[@]}"
   git submodule foreach --recursive git clean -xffd
 }
 alias grr="git_recursive_reset"
