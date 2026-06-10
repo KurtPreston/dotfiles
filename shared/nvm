@@ -40,7 +40,9 @@ nvm_auto_use() {
 
     if [ "$target_version" != "$current_version" ]; then
         echo "Found $source_label with version $target_spec. Switching from $current_version..."
-        nvm use "$target_spec"
+        # --delete-prefix silences nvm's spurious npm-prefix warning in shells
+        # (e.g. Cursor's) whose PATH-first node sits outside $NVM_DIR.
+        nvm use --delete-prefix "$target_spec" --silent
     fi
 }
 
