@@ -6,6 +6,15 @@ export NVM_DIR="$HOME/.nvm"
 # Early abort if nvm is not installed
 [ ! -s "$NVM_DIR/nvm.sh" ] && return
 
+# Only auto-switch in interactive shells (the cd-hooks can't fire otherwise).
+# This skips agents, CI, cron and piped shells, and avoids nvm's source-time
+# `nvm use` printing a spurious npm-prefix warning under Cursor. `--no-use`
+# still loads the `nvm` command so node/npm resolve via PATH.
+case $- in
+    *i*) ;;
+    *) \. "$NVM_DIR/nvm.sh" --no-use; return ;;
+esac
+
 \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
