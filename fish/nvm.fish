@@ -50,9 +50,13 @@ function nvm_auto_use
     end
 end
 
-function __nvm_auto_use_on_pwd --on-variable PWD
+# Only auto-switch in interactive shells (skips agents, CI, cron, piped shells;
+# the PWD hook can't fire otherwise).
+if status is-interactive
+    function __nvm_auto_use_on_pwd --on-variable PWD
+        nvm_auto_use
+    end
+
+    # Run once on shell startup for current directory
     nvm_auto_use
 end
-
-# Run once on shell startup for current directory
-nvm_auto_use
