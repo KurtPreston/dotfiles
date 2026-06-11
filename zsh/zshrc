@@ -34,4 +34,7 @@ done
 # Source keybindings
 source ~/.dotfiles/zsh/keybindings
 
+# Source history configuration (after fzf/keybindings so the Ctrl+R override wins)
+source ~/.dotfiles/zsh/history
+
 # Zsh-specific configuration can be added here 

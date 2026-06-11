@@ -28,6 +28,15 @@ The script will:
 
 Simple terminal prompt showing git branch, user, and dir.
 
+### Shared history
+
+Commands are written to a single shared history file the moment they run, so
+`Ctrl+R` (fzf) finds commands typed in *any* terminal. The `Up` arrow stays
+local: it only walks the commands typed in *this* terminal, because other
+sessions are never merged back into the current session's in-memory history.
+Configured in `bash/history` and `zsh/history`. (Fish already shares history
+across terminals natively.)
+
 ### Aliases
 
 | Alias | Command | Description |

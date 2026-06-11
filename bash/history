@@ -1,0 +1,39 @@
+# Shared command history with a local Up arrow
+#
+# Goal: every terminal writes its commands to one shared history file so that
+# Ctrl+R (fzf) can find commands typed in *any* terminal, while the Up arrow
+# keeps walking only the commands typed in *this* terminal.
+
+export HISTFILE="${HISTFILE:-$HOME/.bash_history}"
+export HISTSIZE=100000
+export HISTFILESIZE=200000
+export HISTCONTROL=ignoreboth   # drop duplicate and space-prefixed commands
+
+# Append to the history file instead of overwriting it on exit.
+shopt -s histappend
+
+# Flush each command to the shared file as soon as it runs. We deliberately do
+# NOT run `history -n` / `history -r`, so commands from other terminals are
+# never merged into this session's in-memory list -- that is what keeps the Up
+# arrow scoped to this terminal.
+if [[ "$PROMPT_COMMAND" != *"history -a"* ]]; then
+    PROMPT_COMMAND="history -a${PROMPT_COMMAND:+; $PROMPT_COMMAND}"
+fi
+
+# Make Ctrl+R search the on-disk shared history (every terminal) rather than the
+# in-memory per-session list. Only override once fzf is actually loaded.
+if [[ $- == *i* ]] && command -v fzf &>/dev/null; then
+    __fzf_history_shared__() {
+        local file="${HISTFILE:-$HOME/.bash_history}"
+        local selected
+        selected=$(
+            tac -- "$file" 2>/dev/null \
+                | awk 'NF && !/^#/ && !seen[$0]++' \
+                | fzf --height 40% --border --reverse --no-sort \
+                      --query "$READLINE_LINE" --prompt='history> '
+        ) || return
+        READLINE_LINE="$selected"
+        READLINE_POINT=${#READLINE_LINE}
+    }
+    bind -x '"\C-r": __fzf_history_shared__'
+fi

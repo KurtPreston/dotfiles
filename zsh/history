@@ -1,0 +1,36 @@
+# Shared command history with a local Up arrow (see bash/history for rationale).
+#
+# Every terminal writes its commands to one shared history file so Ctrl+R (fzf)
+# can find commands from *any* terminal, while the Up arrow keeps walking only
+# the commands typed in *this* terminal.
+
+export HISTFILE="${HISTFILE:-$HOME/.zsh_history}"
+export HISTSIZE=100000
+export SAVEHIST=200000
+
+setopt APPEND_HISTORY        # add to the history file, don't overwrite it
+setopt INC_APPEND_HISTORY    # write each command to $HISTFILE as soon as it runs
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_SPACE
+unsetopt SHARE_HISTORY       # do NOT import other sessions -> Up stays local
+
+# Make Ctrl+R search the on-disk shared history (every terminal) rather than the
+# in-memory per-session list. Only override once fzf is actually loaded.
+if [[ -o interactive ]] && command -v fzf &>/dev/null; then
+    __fzf_history_shared() {
+        local file="${HISTFILE:-$HOME/.zsh_history}"
+        local selected
+        selected=$(
+            tac -- "$file" 2>/dev/null \
+                | sed 's/^: [0-9]*:[0-9]*;//' \
+                | awk 'NF && !seen[$0]++' \
+                | fzf --height 40% --border --reverse --no-sort \
+                      --query "$LBUFFER" --prompt='history> '
+        ) || return
+        BUFFER="$selected"
+        CURSOR=${#BUFFER}
+        zle reset-prompt
+    }
+    zle -N __fzf_history_shared
+    bindkey '^R' __fzf_history_shared
+fi
