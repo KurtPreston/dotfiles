@@ -32,4 +32,7 @@ done
 # Source keybindings
 source ~/.dotfiles/bash/keybindings
 
+# Source history configuration (after fzf/keybindings so the Ctrl+R override wins)
+source ~/.dotfiles/bash/history
+
 # Bash-specific configuration can be added here 
