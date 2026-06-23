@@ -75,6 +75,10 @@ case "$CURRENT_SHELL" in
         ;;
 esac
 
+# Install tmux configuration (shell-agnostic)
+echo -e "${GREEN}Installing tmux configuration...${NC}"
+create_symlink "$DOTFILES_DIR/tmux/tmux.conf" "$HOME_DIR/.tmux.conf"
+
 # Setup Git configuration
 echo -e "${GREEN}Setting up Git configuration...${NC}"
 "$DOTFILES_DIR/git/setup_gitconfig.sh"
