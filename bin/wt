@@ -3,8 +3,9 @@
 # wt - worktree-centric session manager
 #
 # One bare "base" repo per project, one git worktree per branch in a
-# predictable folder, an optional tmux session per worktree, and a
-# deterministic color theme shared between tmux and Cursor/VSCode.
+# predictable folder, one tmux session per project (a window per worktree,
+# a pane per tool), and a deterministic color theme shared between tmux and
+# Cursor/VSCode.
 #
 # git is the source of truth: branch -> folder mapping comes straight from
 # `git worktree list`, so there is no separate state file to drift.
@@ -19,8 +20,9 @@ set -uo pipefail
 
 CODE_HOME="${CODE_HOME:-$HOME/Code}"
 
-# Comma-separated list of name=command pairs; each becomes a tmux window.
-# An empty command means a plain shell. Override in your shell config.
+# Comma-separated list of name=command pairs; each becomes a tmux pane split
+# within the worktree's window. An empty command means a plain shell.
+# Override in your shell config.
 WT_TMUX_LAYOUT="${WT_TMUX_LAYOUT:-claude=claude,shell=}"
 
 # Colon-separated list of untracked files copied from the default-branch
@@ -111,7 +113,9 @@ sanitize() { printf '%s' "$1" | tr '/:' '--'; }
 
 project_name() { basename "$PROJECT_DIR"; }
 
-session_name() { printf '%s-%s' "$(project_name)" "$(sanitize "$1")"; }
+# One tmux session per project; one window per worktree (branch).
+project_session() { sanitize "$(project_name)"; }
+window_name() { sanitize "$1"; }
 
 # Print the worktree path for a branch, or nothing if it has no worktree.
 worktree_path_for() {
@@ -134,52 +138,85 @@ has_tmux() { command -v tmux >/dev/null 2>&1; }
 
 session_exists() { tmux has-session -t "=$1" 2>/dev/null; }
 
-apply_tmux_color() {
-  local name=$1 hex=$2 fg
-  fg=$(fg_for_hex "$hex")
-  tmux set-option -t "$name" status-style "bg=$hex,fg=$fg" 2>/dev/null || true
-  tmux set-option -t "$name" pane-active-border-style "fg=$hex" 2>/dev/null || true
+# tmux has no has-window; check membership of the session's window list.
+window_exists() {
+  local session=$1 win=$2 w
+  while IFS= read -r w; do
+    [ "$w" = "$win" ] && return 0
+  done < <(tmux list-windows -t "=$session" -F '#{window_name}' 2>/dev/null)
+  return 1
 }
 
-create_session() {
-  local name=$1 dir=$2 first=1 w wname wcmd
-  local -a windows
-  IFS=',' read -ra windows <<< "$WT_TMUX_LAYOUT"
-  if [ "${#windows[@]}" -eq 0 ]; then
-    tmux new-session -d -s "$name" -c "$dir"
+apply_window_color() {
+  local session=$1 win=$2 hex=$3 fg
+  fg=$(fg_for_hex "$hex")
+  # Referenced by window-status formats in tmux.conf (per-window user options).
+  tmux set-window-option -t "$session:$win" @wt_bg "$hex" 2>/dev/null || true
+  tmux set-window-option -t "$session:$win" @wt_fg "$fg" 2>/dev/null || true
+  tmux set-window-option -t "$session:$win" pane-active-border-style "fg=$hex" 2>/dev/null || true
+}
+
+# Create the per-project session (detached) with a throwaway placeholder window.
+ensure_project_session() {
+  local session=$1
+  session_exists "$session" && return 0
+  tmux new-session -d -s "$session" -c "$PROJECT_DIR" -n __wt__
+}
+
+# Remove the placeholder window once at least one real worktree window exists.
+kill_placeholder() {
+  local session=$1
+  window_exists "$session" __wt__ || return 0
+  # Only kill it if there is another window to fall back to.
+  local count
+  count=$(tmux list-windows -t "=$session" 2>/dev/null | wc -l)
+  [ "$count" -gt 1 ] && tmux kill-window -t "$session:__wt__" 2>/dev/null || true
+}
+
+# Build a worktree window: one pane per WT_TMUX_LAYOUT entry.
+build_worktree_window() {
+  local session=$1 win=$2 dir=$3 first=1 p pname pcmd
+  local -a panes
+  IFS=',' read -ra panes <<< "$WT_TMUX_LAYOUT"
+  tmux new-window -t "$session" -n "$win" -c "$dir"
+  if [ "${#panes[@]}" -eq 0 ]; then
     return
   fi
-  for w in "${windows[@]}"; do
-    wname=${w%%=*}; wcmd=${w#*=}
-    [ "$wname" = "$w" ] && wcmd=""
+  for p in "${panes[@]}"; do
+    pname=${p%%=*}; pcmd=${p#*=}
+    [ "$pname" = "$p" ] && pcmd=""
+    # The first entry uses the window's initial pane; the rest are splits.
     if [ "$first" = 1 ]; then
-      tmux new-session -d -s "$name" -n "$wname" -c "$dir"
       first=0
     else
-      tmux new-window -t "$name" -n "$wname" -c "$dir"
+      tmux split-window -t "$session:$win" -c "$dir"
     fi
-    [ -n "$wcmd" ] && tmux send-keys -t "$name:$wname" "$wcmd" C-m
+    # send-keys targets the active pane, which is the one just created.
+    [ -n "$pcmd" ] && tmux send-keys -t "$session:$win" "$pcmd" C-m
   done
-  tmux select-window -t "$name:0" 2>/dev/null || true
+  tmux select-layout -t "$session:$win" tiled 2>/dev/null || true
+  tmux select-pane -t "$session:$win.1" 2>/dev/null \
+    || tmux select-pane -t "$session:$win.0" 2>/dev/null || true
+}
+
+# Ensure a worktree window exists in the session, with its branch color applied.
+ensure_worktree_window() {
+  local session=$1 branch=$2 dir=$3 hex=$4 win
+  win=$(window_name "$branch")
+  if ! window_exists "$session" "$win"; then
+    build_worktree_window "$session" "$win" "$dir"
+  fi
+  apply_window_color "$session" "$win" "$hex"
 }
 
 attach_or_switch() {
-  local name=$1
+  local session=$1 win=${2:-}
+  [ -n "$win" ] && tmux select-window -t "$session:$win" 2>/dev/null || true
   if [ -n "${TMUX:-}" ]; then
-    tmux switch-client -t "$name"
+    tmux switch-client -t "$session"
   else
-    tmux attach -t "$name"
+    tmux attach -t "$session"
   fi
-}
-
-ensure_session() {
-  local name=$1 dir=$2 hex=$3
-  has_tmux || { warn "tmux not installed; skipping session (cd only)."; return 1; }
-  if ! session_exists "$name"; then
-    create_session "$name" "$dir"
-  fi
-  apply_tmux_color "$name" "$hex"
-  return 0
 }
 
 # ----------------------------------------------------------------------------
@@ -264,15 +301,18 @@ add_local_exclude() {
   grep -qxF "$pattern" "$ex" 2>/dev/null || printf '%s\n' "$pattern" >> "$ex"
 }
 
-# Ensure the tmux session for a worktree, then hand off the shell.
+# Ensure the project session + this worktree's window, then hand off the shell.
 enter_worktree() {
-  local dir=$1 branch=$2 hex name
+  local dir=$1 branch=$2 hex session win
   hex=$(color_for_branch "$branch")
-  name=$(session_name "$branch")
+  session=$(project_session)
+  win=$(window_name "$branch")
   emit_cd "$dir"
-  if ensure_session "$name" "$dir" "$hex"; then
-    attach_or_switch "$name"
-  fi
+  has_tmux || { warn "tmux not installed; skipping session (cd only)."; return; }
+  ensure_project_session "$session"
+  ensure_worktree_window "$session" "$branch" "$dir" "$hex"
+  kill_placeholder "$session"
+  attach_or_switch "$session" "$win"
 }
 
 # ----------------------------------------------------------------------------
@@ -360,6 +400,37 @@ cmd_switch() {
   enter_worktree "$dir" "$branch"
 }
 
+cmd_tmux() {
+  resolve_base
+  has_tmux || die "tmux is not installed."
+  local session; session=$(project_session)
+  ensure_project_session "$session"
+
+  # Build a window for every existing worktree (skip the bare repo entry).
+  local path="" branch="" bare=0 default hex
+  default=$(default_branch)
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*) path=${line#worktree } ;;
+      "branch "*)   branch=${line#branch refs/heads/} ;;
+      "bare")       bare=1 ;;
+      "")
+        if [ -n "$path" ] && [ -n "$branch" ] && [ "$bare" -eq 0 ]; then
+          hex=$(color_for_branch "$branch")
+          ensure_worktree_window "$session" "$branch" "$path" "$hex"
+        fi
+        path=""; branch=""; bare=0 ;;
+    esac
+  done < <(git -C "$BASE" worktree list --porcelain 2>/dev/null)
+  if [ -n "$path" ] && [ -n "$branch" ] && [ "$bare" -eq 0 ]; then
+    hex=$(color_for_branch "$branch")
+    ensure_worktree_window "$session" "$branch" "$path" "$hex"
+  fi
+
+  kill_placeholder "$session"
+  attach_or_switch "$session" "$(window_name "$default")"
+}
+
 cmd_list() {
   resolve_base
   local path="" branch="" head="" bare=0
@@ -385,7 +456,7 @@ _print_worktree_row() {
   [ -n "$branch" ] || branch="(no branch)"
   hex=$(color_for_branch "$branch")
   sw=$(swatch "$hex")
-  if session_exists "$(session_name "$branch")" 2>/dev/null; then
+  if window_exists "$(project_session)" "$(window_name "$branch")" 2>/dev/null; then
     tmux_mark="${_c_green}tmux${_c_reset}"
   else
     tmux_mark="${_c_dim} -- ${_c_reset}"
@@ -433,7 +504,7 @@ cmd_prune() {
 
   for entry in "${candidates[@]}"; do
     b=${entry%%$'\t'*}; p=${entry#*$'\t'}
-    has_tmux && tmux kill-session -t "$(session_name "$b")" 2>/dev/null || true
+    has_tmux && tmux kill-window -t "$(project_session):$(window_name "$b")" 2>/dev/null || true
     if git -C "$BASE" worktree remove "$p" 2>/dev/null; then
       info "Removed worktree $p (branch '$b' kept)."
     else
@@ -473,7 +544,7 @@ cmd_rm() {
   [ -n "$branch" ] || die "usage: wt rm BRANCH [--force]"
   local dir
   dir=$(worktree_path_for "$branch") || die "no worktree for branch '$branch'."
-  has_tmux && tmux kill-session -t "$(session_name "$branch")" 2>/dev/null || true
+  has_tmux && tmux kill-window -t "$(project_session):$(window_name "$branch")" 2>/dev/null || true
   if [ "$force" = "--force" ] || [ "$force" = "-f" ]; then
     git -C "$BASE" worktree remove --force "$dir"
   else
@@ -498,15 +569,19 @@ Usage:
   wt clone GIT_URL [FOLDER]   Clone a repo as a bare .base + default worktree
   wt BRANCH                   Switch to (or create) a worktree for BRANCH
   wt switch [BRANCH]          Same as above; no BRANCH opens an fzf picker
+  wt tmux                     Attach the project session, building a window per worktree
   wt list | ls                List worktrees with color + tmux/dirty status
   wt prune                    Remove merged/gone worktrees (keeps branch refs)
   wt rm BRANCH [--force]      Remove a single worktree (keeps branch ref)
   wt color BRANCH             Print the deterministic color for BRANCH
   wt help                     Show this help
 
+Sessions: one tmux session per project, one window per worktree, and one pane
+per WT_TMUX_LAYOUT entry split within that window.
+
 Environment:
   CODE_HOME         Base dir for new projects (default: ~/Code)
-  WT_TMUX_LAYOUT    tmux windows as name=cmd,name=cmd (default: claude=claude,shell=)
+  WT_TMUX_LAYOUT    tmux panes as name=cmd,name=cmd (default: claude=claude,shell=)
   WT_COPY           Colon-separated untracked files to copy into new worktrees (default: .env)
 EOF
 }
@@ -519,6 +594,7 @@ main() {
   case "$cmd" in
     clone)            shift; cmd_clone "$@" ;;
     switch|sw)        shift; cmd_switch "$@" ;;
+    tmux)             shift; cmd_tmux "$@" ;;
     list|ls)          shift; cmd_list "$@" ;;
     prune)            shift; cmd_prune "$@" ;;
     rm|remove)        shift; cmd_rm "$@" ;;
