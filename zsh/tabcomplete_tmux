@@ -1,0 +1,48 @@
+# Zsh tab completion for tmux
+# Completes tmux subcommands (and their aliases) plus session names after -t/-s
+
+# Print the names of running tmux sessions (empty if no server is running)
+_tmux_sessions() {
+    tmux list-sessions -F '#S' 2>/dev/null
+}
+
+_tmux_completion() {
+    local -a subcommands sessions
+
+    subcommands=(
+        attach-session attach detach-client detach has-session has
+        kill-server kill-session kill-window killw kill-pane killp
+        list-clients lsc list-commands lscm list-sessions ls
+        list-windows lsw list-panes lsp new-session new new-window neww
+        rename-session rename rename-window renamew switch-client switchc
+        send-keys send split-window splitw select-pane selectp
+        select-window selectw last-pane lastp last-window last
+        source-file source show-options show set-option set
+        set-window-option setw display-message display copy-mode clock-mode
+        resize-pane resizep swap-pane swapp swap-window swapw
+        move-window movew respawn-pane respawnp respawn-window respawnw
+        choose-tree command-prompt run-shell run if-shell if
+        capture-pane capturep pipe-pane pipep
+    )
+
+    # Complete session names when the previous word targets a session
+    if [[ $words[CURRENT-1] == -t || $words[CURRENT-1] == -s ]]; then
+        sessions=(${(f)"$(_tmux_sessions)"})
+        _describe 'session' sessions
+        return
+    fi
+
+    # First argument: complete the subcommand
+    if (( CURRENT == 2 )); then
+        _describe 'tmux command' subcommands
+        return
+    fi
+
+    # Fall back to file completion for everything else
+    _files
+}
+
+# Register completion for the tmux command (only if compdef is available)
+if (( $+functions[compdef] )); then
+    compdef _tmux_completion tmux
+fi
