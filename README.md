@@ -54,6 +54,11 @@ Also enables mouse support, 1-based gap-free window/pane numbering, a 50k-line
 scrollback, faster escape-time for Vim/Neovim, true color, and a minimal status
 bar.
 
+Tab completion for the `tmux` command is provided in all three shells (bash,
+zsh, and fish): the first argument completes tmux subcommands and their short
+aliases (e.g. `attach`, `lsw`, `killp`), and arguments after `-t`/`-s` complete
+the names of running tmux sessions.
+
 ### Aliases
 
 | Alias | Command | Description |

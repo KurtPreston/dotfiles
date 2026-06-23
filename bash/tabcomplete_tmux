@@ -1,0 +1,45 @@
+# Bash tab completion for tmux
+# Completes tmux subcommands (and their aliases) plus session names after -t/-s
+
+# Common tmux subcommands and their short aliases
+_tmux_subcommands="attach-session attach detach-client detach has-session has \
+kill-server kill-session kill-window killw kill-pane killp \
+list-clients lsc list-commands lscm list-sessions ls list-windows lsw list-panes lsp \
+new-session new new-window neww rename-session rename rename-window renamew \
+switch-client switchc send-keys send split-window splitw \
+select-pane selectp select-window selectw last-pane lastp last-window last \
+source-file source show-options show set-option set set-window-option setw \
+display-message display copy-mode clock-mode resize-pane resizep \
+swap-pane swapp swap-window swapw move-window movew \
+respawn-pane respawnp respawn-window respawnw choose-tree command-prompt \
+run-shell run if-shell if capture-pane capturep pipe-pane pipep"
+
+# Print the names of running tmux sessions (empty if no server is running)
+_tmux_sessions() {
+    tmux list-sessions -F '#S' 2>/dev/null
+}
+
+_tmux_completion() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    local prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    # Complete session names when the previous word targets a session
+    case "$prev" in
+        -t|-s)
+            COMPREPLY=($(compgen -W "$(_tmux_sessions)" -- "$cur"))
+            return
+            ;;
+    esac
+
+    # First argument: complete the subcommand
+    if [[ $COMP_CWORD -eq 1 ]]; then
+        COMPREPLY=($(compgen -W "$_tmux_subcommands" -- "$cur"))
+        return
+    fi
+
+    # Fall back to file completion for everything else
+    COMPREPLY=($(compgen -f -- "$cur"))
+}
+
+# Register completion for the tmux command
+complete -F _tmux_completion tmux
