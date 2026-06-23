@@ -37,6 +37,23 @@ sessions are never merged back into the current session's in-memory history.
 Configured in `bash/history` and `zsh/history`. (Fish already shares history
 across terminals natively.)
 
+### tmux
+
+A minimal `tmux.conf` (symlinked to `~/.tmux.conf`) with sensible ergonomics.
+The prefix is remapped from `Ctrl+b` to **`Ctrl+a`**.
+
+| Binding | Action |
+|---------|--------|
+| `prefix \|` | Split pane vertically (in the current path) |
+| `prefix -` | Split pane horizontally (in the current path) |
+| `prefix h/j/k/l` | Move between panes (Vim style) |
+| `prefix H/J/K/L` | Resize the current pane (repeatable) |
+| `prefix r` | Reload `~/.tmux.conf` |
+
+Also enables mouse support, 1-based gap-free window/pane numbering, a 50k-line
+scrollback, faster escape-time for Vim/Neovim, true color, and a minimal status
+bar.
+
 ### Aliases
 
 | Alias | Command | Description |
