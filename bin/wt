@@ -80,11 +80,26 @@ BASE=""          # path to the bare repo (.base)
 PROJECT_DIR=""   # parent dir holding .base and the worktrees
 
 resolve_base() {
+  # Prefer the wt project marker: walk up to a directory containing .base.
+  # This works from the project root, from inside any worktree, and from any
+  # subdirectory of either (git rev-parse only works inside a worktree).
+  local dir="$PWD"
+  while [ -n "$dir" ] && [ "$dir" != "/" ]; do
+    if [ -d "$dir/.base" ]; then
+      BASE="$dir/.base"
+      PROJECT_DIR="$dir"
+      return 0
+    fi
+    dir=$(dirname "$dir")
+  done
+  # Fall back to git's view (e.g. a project whose base repo is named otherwise).
   local common
-  common=$(git rev-parse --git-common-dir 2>/dev/null) \
-    || die "not inside a wt project (no git repo found). Use 'wt clone URL FOLDER' first."
-  BASE=$(cd "$common" && pwd)
-  PROJECT_DIR=$(dirname "$BASE")
+  if common=$(git rev-parse --git-common-dir 2>/dev/null); then
+    BASE=$(cd "$common" && pwd)
+    PROJECT_DIR=$(dirname "$BASE")
+    return 0
+  fi
+  die "not inside a wt project (no .base found). Use 'wt clone URL FOLDER' first."
 }
 
 default_branch() {
@@ -295,6 +310,8 @@ cmd_clone() {
 cmd_switch() {
   resolve_base
   local branch=${1:-}
+  # Tolerate a trailing slash from directory tab-completion (e.g. "feat/").
+  while [ "${branch%/}" != "$branch" ]; do branch=${branch%/}; done
 
   if [ -z "$branch" ]; then
     if command -v fzf >/dev/null 2>&1; then
