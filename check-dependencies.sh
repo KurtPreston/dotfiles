@@ -14,10 +14,11 @@ NC='\033[0m' # No Color
 # Tools to check. Each entry maps a command name to a short description.
 DEPS=(
     "git:Version control"
-    "fzf:Fuzzy finder (history search, completions)"
+    "fzf:Fuzzy finder (history search, completions, wt picker)"
     "rg:ripgrep, fast recursive search"
     "delta:Syntax-highlighting pager for git diffs"
-    "jq:JSON processor (used by node version auto-switch)"
+    "jq:JSON processor (node version auto-switch, wt editor theming)"
+    "tmux:Terminal multiplexer (wt worktree sessions)"
 )
 
 # Detect the operating system / package manager hint.
