@@ -124,7 +124,7 @@ Each new worktree gets submodules initialized, configured untracked files copied
 | Environment variable | Default | Description |
 |----------------------|---------|-------------|
 | `CODE_HOME` | `~/Code` | Base directory for new projects |
-| `WT_TMUX_LAYOUT` | `claude=claude,shell=` | Comma-separated `name=command` pairs, one tmux pane each split within the worktree's window (empty command = plain shell) |
+| `WT_TMUX_LAYOUT` | `shell=,claude=claude` | Comma-separated `name=command` pairs, one tmux pane each laid out left-to-right within the worktree's window (empty command = plain shell) |
 | `WT_COPY` | `.env` | Colon-separated untracked files copied from the default-branch worktree into new worktrees |
 
 Requires `git` and `tmux`; `fzf` enables the interactive picker and `jq` enables merging the editor color theme into an existing `settings.json`.

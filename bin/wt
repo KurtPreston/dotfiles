@@ -23,7 +23,7 @@ CODE_HOME="${CODE_HOME:-$HOME/Code}"
 # Comma-separated list of name=command pairs; each becomes a tmux pane split
 # within the worktree's window. An empty command means a plain shell.
 # Override in your shell config.
-WT_TMUX_LAYOUT="${WT_TMUX_LAYOUT:-claude=claude,shell=}"
+WT_TMUX_LAYOUT="${WT_TMUX_LAYOUT:-shell=,claude=claude}"
 
 # Colon-separated list of untracked files copied from the default-branch
 # worktree into each new worktree.
@@ -178,7 +178,13 @@ build_worktree_window() {
   local session=$1 win=$2 dir=$3 first=1 p pname pcmd
   local -a panes
   IFS=',' read -ra panes <<< "$WT_TMUX_LAYOUT"
-  tmux new-window -t "$session" -n "$win" -c "$dir"
+  # Append after the last window. A bare "-t $session" target resolves to the
+  # caller's *current* window when run from inside a client, and without -a/-b
+  # tmux treats that as the literal index to create at -> "index N in use" when
+  # invoked from an existing worktree window. -a -t "$session:{last}" sidesteps
+  # this by always inserting after the final window (renumber-windows keeps it
+  # gap-free), regardless of which window is current.
+  tmux new-window -a -t "$session:{last}" -n "$win" -c "$dir"
   if [ "${#panes[@]}" -eq 0 ]; then
     return
   fi
@@ -194,9 +200,14 @@ build_worktree_window() {
     # send-keys targets the active pane, which is the one just created.
     [ -n "$pcmd" ] && tmux send-keys -t "$session:$win" "$pcmd" C-m
   done
-  tmux select-layout -t "$session:$win" tiled 2>/dev/null || true
-  tmux select-pane -t "$session:$win.1" 2>/dev/null \
-    || tmux select-pane -t "$session:$win.0" 2>/dev/null || true
+  # even-horizontal lays panes left-to-right in WT_TMUX_LAYOUT order, so the
+  # first entry (shell) is leftmost and claude sits on the right. tiled was
+  # avoided because it picks top/bottom vs left/right based on the window's
+  # aspect ratio, making the layout non-deterministic.
+  tmux select-layout -t "$session:$win" even-horizontal 2>/dev/null || true
+  # Focus the rightmost pane (claude) regardless of pane-base-index.
+  tmux select-pane -t "$session:$win.{bottom-right}" 2>/dev/null \
+    || tmux select-pane -t "$session:$win.{right}" 2>/dev/null || true
 }
 
 # Ensure a worktree window exists in the session, with its branch color applied.
@@ -581,7 +592,7 @@ per WT_TMUX_LAYOUT entry split within that window.
 
 Environment:
   CODE_HOME         Base dir for new projects (default: ~/Code)
-  WT_TMUX_LAYOUT    tmux panes as name=cmd,name=cmd (default: claude=claude,shell=)
+  WT_TMUX_LAYOUT    tmux panes as name=cmd,name=cmd (default: shell=,claude=claude)
   WT_COPY           Colon-separated untracked files to copy into new worktrees (default: .env)
 EOF
 }
