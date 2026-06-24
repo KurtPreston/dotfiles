@@ -104,11 +104,14 @@ For tmux, each **project** is a single session you attach to (e.g. `salsa`), eac
 | `wt clone GIT_URL [FOLDER]` | Clone a repo as a bare `.base` plus a worktree for the default branch under `$CODE_HOME/FOLDER` |
 | `wt <BRANCH>` | Switch to a branch's worktree (creating it off the latest default branch if needed) and attach its tmux session |
 | `wt switch [BRANCH]` | Same as above; with no branch and `fzf` installed, opens an interactive picker |
+| `wt path BRANCH` | Resolve a branch's worktree (creating it off the latest default branch if needed) and print its absolute path to stdout, without attaching tmux. Intended for remote tooling driving `wt` over SSH |
 | `wt tmux` | Attach the project's tmux session, building a window for every existing worktree |
-| `wt list` / `wt ls` | List worktrees with their color swatch, tmux/dirty status, and path |
+| `wt list` / `wt ls` | List worktrees with their color swatch, tmux/dirty status, and path. Add `--porcelain` to print machine-readable `branch<TAB>path` lines to stdout instead |
 | `wt prune` | Remove worktrees whose branches are merged into the default branch or gone from the remote (keeps the branch refs) |
 | `wt rm BRANCH [--force]` | Remove a single worktree (keeps the branch ref) |
 | `wt color BRANCH` | Print the deterministic color assigned to a branch |
+
+**Remote tooling:** `wt path` and `wt ls --porcelain` write only their result (a path, or `branch<TAB>path` lines) to stdout — all status and log output goes to stderr — so an external tool can drive `wt` over SSH and capture the result cleanly. For example, `ssh HOST "bash -lc 'cd ~/Code/myproj && wt path feature/x'"` resolves (creating it if needed) the worktree for `feature/x` and returns its absolute path.
 
 Project layout created by `wt clone URL myproj`:
 

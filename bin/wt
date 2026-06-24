@@ -358,6 +358,53 @@ cmd_clone() {
   enter_worktree "$dir" "$branch"
 }
 
+# Ensure a worktree exists for BRANCH, creating it off the latest default
+# branch if needed. On success sets the global WT_RESULT_DIR to the resolved
+# worktree directory; never touches tmux. Assumes resolve_base has run. We use
+# a global rather than stdout so that `die` (which exits) still aborts the whole
+# process instead of just a command-substitution subshell, and so callers like
+# cmd_path keep stdout clean (info/warn already go to stderr).
+WT_RESULT_DIR=""
+ensure_worktree() {
+  local branch=$1 default base_ref dir
+
+  if dir=$(worktree_path_for "$branch"); then
+    info "Using existing worktree: $dir"
+    git -C "$dir" pull --ff-only >/dev/null 2>&1 \
+      && info "Pulled latest." || warn "skipped pull (no upstream or not fast-forward)."
+    WT_RESULT_DIR="$dir"
+    return 0
+  fi
+
+  # New worktree.
+  info "Fetching latest..."
+  git -C "$BASE" fetch origin >/dev/null 2>&1 || warn "fetch failed; using local refs."
+
+  default=$(default_branch)
+  dir="$PROJECT_DIR/$(sanitize "$branch")"
+  [ -e "$dir" ] && die "$dir already exists but is not a worktree for '$branch'."
+
+  # Redirect git worktree add's chatter to stderr so cmd_path's stdout carries
+  # only the resolved path (the resolver contract for remote tooling).
+  if git -C "$BASE" show-ref --verify --quiet "refs/heads/$branch"; then
+    info "Creating worktree for existing local branch '$branch' at $dir"
+    git -C "$BASE" worktree add "$dir" "$branch" >&2 || die "worktree add failed."
+  elif git -C "$BASE" show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+    info "Creating worktree tracking origin/$branch at $dir"
+    git -C "$BASE" worktree add --track -b "$branch" "$dir" "origin/$branch" >&2 \
+      || die "worktree add failed."
+  else
+    base_ref="$default"
+    git -C "$BASE" show-ref --verify --quiet "refs/remotes/origin/$default" \
+      && base_ref="origin/$default"
+    info "Creating new branch '$branch' off $base_ref at $dir"
+    git -C "$BASE" worktree add -b "$branch" "$dir" "$base_ref" >&2 || die "worktree add failed."
+  fi
+
+  setup_worktree "$dir" "$branch"
+  WT_RESULT_DIR="$dir"
+}
+
 cmd_switch() {
   resolve_base
   local branch=${1:-}
@@ -375,40 +422,21 @@ cmd_switch() {
     fi
   fi
 
-  local dir
-  if dir=$(worktree_path_for "$branch"); then
-    info "Switching to existing worktree: $dir"
-    git -C "$dir" pull --ff-only >/dev/null 2>&1 \
-      && info "Pulled latest." || warn "skipped pull (no upstream or not fast-forward)."
-    enter_worktree "$dir" "$branch"
-    return
-  fi
+  ensure_worktree "$branch"
+  enter_worktree "$WT_RESULT_DIR" "$branch"
+}
 
-  # New worktree.
-  info "Fetching latest..."
-  git -C "$BASE" fetch origin >/dev/null 2>&1 || warn "fetch failed; using local refs."
-
-  local default; default=$(default_branch)
-  dir="$PROJECT_DIR/$(sanitize "$branch")"
-  [ -e "$dir" ] && die "$dir already exists but is not a worktree for '$branch'."
-
-  if git -C "$BASE" show-ref --verify --quiet "refs/heads/$branch"; then
-    info "Creating worktree for existing local branch '$branch' at $dir"
-    git -C "$BASE" worktree add "$dir" "$branch" || die "worktree add failed."
-  elif git -C "$BASE" show-ref --verify --quiet "refs/remotes/origin/$branch"; then
-    info "Creating worktree tracking origin/$branch at $dir"
-    git -C "$BASE" worktree add --track -b "$branch" "$dir" "origin/$branch" \
-      || die "worktree add failed."
-  else
-    local base_ref="$default"
-    git -C "$BASE" show-ref --verify --quiet "refs/remotes/origin/$default" \
-      && base_ref="origin/$default"
-    info "Creating new branch '$branch' off $base_ref at $dir"
-    git -C "$BASE" worktree add -b "$branch" "$dir" "$base_ref" || die "worktree add failed."
-  fi
-
-  setup_worktree "$dir" "$branch"
-  enter_worktree "$dir" "$branch"
+# Resolve (creating if needed) BRANCH's worktree and print its path to stdout.
+# Headless counterpart to cmd_switch for remote tooling driving wt over SSH:
+#   ssh HOST "bash -lc 'cd ~/Code/PROJECT && wt path BRANCH'"
+# stdout carries only the path; all status/log output goes to stderr.
+cmd_path() {
+  resolve_base
+  local branch=${1:-}
+  while [ "${branch%/}" != "$branch" ]; do branch=${branch%/}; done
+  [ -n "$branch" ] || die "usage: wt path BRANCH"
+  ensure_worktree "$branch"
+  printf '%s\n' "$WT_RESULT_DIR"
 }
 
 cmd_tmux() {
@@ -444,6 +472,10 @@ cmd_tmux() {
 
 cmd_list() {
   resolve_base
+  if [ "${1:-}" = "--porcelain" ]; then
+    _list_porcelain
+    return
+  fi
   local path="" branch="" head="" bare=0
   printf '%bProject:%b %s  %b(%s)%b\n' \
     "$_c_bold" "$_c_reset" "$(project_name)" "$_c_dim" "$PROJECT_DIR" "$_c_reset" >&2
@@ -460,6 +492,30 @@ cmd_list() {
     esac
   done < <(git -C "$BASE" worktree list --porcelain 2>/dev/null)
   [ -n "$path" ] && [ "$bare" -eq 0 ] && _print_worktree_row "$path" "$branch" "$head"
+}
+
+# Machine-readable enumerator for remote tooling: one "branch<TAB>path" line per
+# worktree on stdout (skips the bare repo and detached/no-branch entries), with
+# no swatches, tmux/dirty status, or project header.
+_list_porcelain() {
+  local path="" branch="" bare=0
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*) path=${line#worktree } ;;
+      "branch "*)   branch=${line#branch refs/heads/} ;;
+      "bare")       bare=1 ;;
+      "")
+        [ -n "$path" ] && [ -n "$branch" ] && [ "$bare" -eq 0 ] \
+          && printf '%s\t%s\n' "$branch" "$path"
+        path=""; branch=""; bare=0 ;;
+    esac
+  done < <(git -C "$BASE" worktree list --porcelain 2>/dev/null)
+  [ -n "$path" ] && [ -n "$branch" ] && [ "$bare" -eq 0 ] \
+    && printf '%s\t%s\n' "$branch" "$path"
+  # Always succeed: the trailing guard above is false when the last entry was
+  # already flushed by a porcelain blank line, which would otherwise leak a
+  # non-zero exit status to machine callers using `set -e`.
+  return 0
 }
 
 _print_worktree_row() {
@@ -580,8 +636,9 @@ Usage:
   wt clone GIT_URL [FOLDER]   Clone a repo as a bare .base + default worktree
   wt BRANCH                   Switch to (or create) a worktree for BRANCH
   wt switch [BRANCH]          Same as above; no BRANCH opens an fzf picker
+  wt path BRANCH              Resolve (creating if needed) BRANCH's worktree; print its path
   wt tmux                     Attach the project session, building a window per worktree
-  wt list | ls                List worktrees with color + tmux/dirty status
+  wt list | ls [--porcelain]  List worktrees; --porcelain prints branch<TAB>path to stdout
   wt prune                    Remove merged/gone worktrees (keeps branch refs)
   wt rm BRANCH [--force]      Remove a single worktree (keeps branch ref)
   wt color BRANCH             Print the deterministic color for BRANCH
@@ -605,6 +662,7 @@ main() {
   case "$cmd" in
     clone)            shift; cmd_clone "$@" ;;
     switch|sw)        shift; cmd_switch "$@" ;;
+    path)             shift; cmd_path "$@" ;;
     tmux)             shift; cmd_tmux "$@" ;;
     list|ls)          shift; cmd_list "$@" ;;
     prune)            shift; cmd_prune "$@" ;;
