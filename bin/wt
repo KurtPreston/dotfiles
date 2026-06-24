@@ -398,7 +398,16 @@ ensure_worktree() {
     git -C "$BASE" show-ref --verify --quiet "refs/remotes/origin/$default" \
       && base_ref="origin/$default"
     info "Creating new branch '$branch' off $base_ref at $dir"
-    git -C "$BASE" worktree add -b "$branch" "$dir" "$base_ref" >&2 || die "worktree add failed."
+    # --no-track so git's autoSetupMerge doesn't point the upstream at the base
+    # ref (e.g. origin/release/next); we then track the same-named branch below.
+    git -C "$BASE" worktree add --no-track -b "$branch" "$dir" "$base_ref" >&2 \
+      || die "worktree add failed."
+    # A branch should always track the same-named branch upstream, so a plain
+    # `git push` / `git pull` targets origin/<branch> regardless of where it was
+    # forked from. The remote branch need not exist yet; the first push creates
+    # it (mirrors what `git push -u origin <branch>` records).
+    git -C "$BASE" config "branch.$branch.remote" origin
+    git -C "$BASE" config "branch.$branch.merge" "refs/heads/$branch"
   fi
 
   setup_worktree "$dir" "$branch"
