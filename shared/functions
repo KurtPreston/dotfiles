@@ -49,19 +49,9 @@ function killport() {
   lsof -i TCP:$1 | grep LISTEN | awk '{print $2}' | xargs kill -9
 }
 
-# wt - worktree-centric session manager
-# The heavy lifting lives in bin/wt; this wrapper exists only so that
-# navigation commands can change *this* shell's directory. bin/wt writes the
-# target worktree path to $WT_CD_FILE, which we read and cd into here.
-wt() {
-  local _wt_file _wt_dest _wt_status
-  _wt_file="$(mktemp)" || return 1
-  WT_CD_FILE="$_wt_file" command wt "$@"
-  _wt_status=$?
-  if [ -s "$_wt_file" ]; then
-    _wt_dest="$(cat "$_wt_file")"
-    [ -d "$_wt_dest" ] && cd "$_wt_dest"
-  fi
-  rm -f "$_wt_file"
-  return $_wt_status
-}
+# grove (worktree workflow launcher, command `grove`) now lives in
+# its own repo: https://github.com/KurtPreston/grove
+# Source its shell integration if installed so grove can cd this shell.
+if [ -f "${CODE_HOME:-$HOME/Code}/grove/shell/grove.bash" ]; then
+  . "${CODE_HOME:-$HOME/Code}/grove/shell/grove.bash"
+fi
