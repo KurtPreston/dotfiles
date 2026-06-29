@@ -89,48 +89,18 @@ the names of running tmux sessions.
 | `killport <PORT>` | Kill process listening on a specific port |
 | `git_recursive_reset` | Aggressively reset project and submodules (honors `$GRR_IGNORE`) |
 | `git stash-index` | Stashes currently staged code |
-| `wt <BRANCH>` | Worktree-centric session manager (see below) |
 
 > **`git_recursive_reset` / `grr`**: Set the `GRR_IGNORE` environment variable to a colon-separated list of filenames or patterns that should never be removed by `git clean`. This is useful for keeping machine-specific files. For example, add `export GRR_IGNORE="myPersistentConfig.json:local-notes.md"` to your local shell config. The defaults (`.env` and `.vscode/settings.json`) are always preserved.
 
-### Worktrees (`wt`)
+### Worktrees (`grove`)
 
-`wt` manages multiple concurrent branches as [git worktrees](https://git-scm.com/docs/git-worktree) instead of juggling several full clones. One bare "base" repo per project, one worktree per branch in a predictable folder, and a deterministic color theme shared between tmux and Cursor/VSCode. Because git refuses to check out the same branch in two worktrees, **every branch maps to exactly one folder** — `wt list` is the authoritative "where is everything" view (git is the source of truth; there is no separate state file).
-
-For tmux, each **project** is a single session you attach to (e.g. `salsa`), each **worktree** is a window in that session (named after its branch), and each `WT_TMUX_LAYOUT` entry is a pane split within that window. Run `wt tmux` from anywhere in a project to attach the project session, creating it and a window for every existing worktree if needed. The per-branch color tints the active window's status entry and pane border instead of a session-wide status bar.
-
-| Command | Description |
-|---------|-------------|
-| `wt clone GIT_URL [FOLDER]` | Clone a repo as a bare `.base` plus a worktree for the default branch under `$CODE_HOME/FOLDER` |
-| `wt <BRANCH>` | Switch to a branch's worktree (creating it off the latest default branch if needed) and attach its tmux session |
-| `wt switch [BRANCH]` | Same as above; with no branch and `fzf` installed, opens an interactive picker |
-| `wt path BRANCH` | Resolve a branch's worktree (creating it off the latest default branch if needed) and print its absolute path to stdout, without attaching tmux. Intended for remote tooling driving `wt` over SSH |
-| `wt tmux` | Attach the project's tmux session, building a window for every existing worktree |
-| `wt list` / `wt ls` | List worktrees with their color swatch, tmux/dirty status, and path. Add `--porcelain` to print machine-readable `branch<TAB>path` lines to stdout instead |
-| `wt prune` | Remove worktrees whose branches are merged into the default branch or gone from the remote (keeps the branch refs) |
-| `wt rm BRANCH [--force]` | Remove a single worktree (keeps the branch ref) |
-| `wt color BRANCH` | Print the deterministic color assigned to a branch |
-
-**Remote tooling:** `wt path` and `wt ls --porcelain` write only their result (a path, or `branch<TAB>path` lines) to stdout — all status and log output goes to stderr — so an external tool can drive `wt` over SSH and capture the result cleanly. For example, `ssh HOST "bash -lc 'cd ~/Code/myproj && wt path feature/x'"` resolves (creating it if needed) the worktree for `feature/x` and returns its absolute path.
-
-Project layout created by `wt clone URL myproj`:
-
-```
-$CODE_HOME/myproj/
-├── .base/          # bare repo (shared object store) for all worktrees
-├── main/           # worktree for the default branch
-└── feature-x/      # worktree for branch feature/x  ('/' becomes '-' in the dir name)
-```
-
-Each new worktree gets submodules initialized, configured untracked files copied in (default `.env`), a per-branch color written into `.vscode/settings.json` (kept out of `git status` via the repo-local exclude), and a tmux window (in the project session) whose status entry uses the same color.
-
-| Environment variable | Default | Description |
-|----------------------|---------|-------------|
-| `CODE_HOME` | `~/Code` | Base directory for new projects |
-| `WT_TMUX_LAYOUT` | `shell=,claude=claude` | Comma-separated `name=command` pairs, one tmux pane each laid out left-to-right within the worktree's window (empty command = plain shell) |
-| `WT_COPY` | `.env` | Colon-separated untracked files copied from the default-branch worktree into new worktrees |
-
-Requires `git` and `tmux`; `fzf` enables the interactive picker and `jq` enables merging the editor color theme into an existing `settings.json`.
+The worktree workflow tool formerly bundled here now lives in its own
+repo: [grove](https://github.com/KurtPreston/grove) (command `grove`).
+These dotfiles automatically source grove's shell integration when it is installed
+at `$CODE_HOME/grove` (see [`shared/functions`](shared/functions) and
+[`fish/functions.fish`](fish/functions.fish)), and the tmux window colors in
+[`tmux/tmux.conf`](tmux/tmux.conf) read the `@grove_bg`/`@grove_fg` options grove's
+`tmux` recipe sets. Install grove from its repo to get the `grove` command.
 
 ## Structure
 
