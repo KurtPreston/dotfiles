@@ -1,0 +1,26 @@
+# Shell history settings for bash and zsh
+# Fish manages its own history; see the fish section of config.fish.
+
+HISTSIZE=100000
+
+if [[ -n "$BASH_VERSION" ]]; then
+    HISTFILESIZE=200000
+    # Ignore duplicate lines and commands starting with a space
+    HISTCONTROL=ignoreboth:erasedups
+    # Skip trivial commands
+    HISTIGNORE="ls:ll:l:cd:pwd:exit:clear:history:&: *"
+    # Append to the history file rather than overwriting it
+    shopt -s histappend
+    # Store multi-line commands as a single history entry
+    shopt -s cmdhist
+fi
+
+if [[ -n "$ZSH_VERSION" ]]; then
+    SAVEHIST=100000
+    HISTFILE="${HISTFILE:-$HOME/.zsh_history}"
+    setopt HIST_IGNORE_ALL_DUPS   # remove older duplicate entries
+    setopt HIST_IGNORE_SPACE      # skip commands starting with a space
+    setopt HIST_REDUCE_BLANKS     # strip superfluous whitespace
+    setopt SHARE_HISTORY          # share history across all open terminals
+    setopt EXTENDED_HISTORY       # record timestamp with each entry
+fi
