@@ -33,7 +33,7 @@
 [grep]
   lineNumber = true
 [push]
-  default = tracking
+  default = simple
   recurseSubmodules = check
 [interactive]
   diffFilter = git-delta-filter
