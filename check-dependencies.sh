@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Dependency check script
 # Checks for optional tools used by these dotfiles and prints

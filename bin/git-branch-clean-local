@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Git Branch Clean Local
 # Clears out all local git branches that have already been merged into the active branch

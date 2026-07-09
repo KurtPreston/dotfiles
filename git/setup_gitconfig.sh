@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Git configuration setup script
 # Prompts for user info on first install and stores it for future use

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Simple dotfiles installation script
 # This script creates symlinks for the appropriate shell configuration
