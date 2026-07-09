@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Git Branch Clean
 # Cleans out local and remote branches, then runs git gc

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Shared script to clean old gulp cache files
 # Used by bash, fish, and zsh tab completion
 

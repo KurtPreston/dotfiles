@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Git Branch Clean Remote
 # Clears out all remote branches that have already been merged

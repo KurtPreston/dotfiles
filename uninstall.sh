@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Dotfiles uninstall script
 # This script removes all symlinks in $HOME that point to the dotfiles project directory

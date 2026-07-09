@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Git Branch Sweep
 # Interactively review and delete local git branches
