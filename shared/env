@@ -13,5 +13,17 @@ if [ -d "$HOME/.local/bin" ]; then
   PATH="$HOME/.local/bin:$PATH"
 fi
 
+# Prefer the newest Ubuntu-packaged Go toolchain (/usr/lib/go-<ver>/bin) over the
+# older distro default that /usr/bin/go points at. Auto-selects the highest
+# installed version (version sort) rather than hard-coding one, and is a no-op on
+# machines without any. `find`/`-name` keeps the glob out of the shell so it stays
+# quiet under zsh's NOMATCH. A recent base (>=1.21) also lets Go's own toolchain
+# management honor go.mod `go`/`toolchain` directives for newer versions.
+_go_bin="$(find /usr/lib -maxdepth 1 -type d -name 'go-*' 2>/dev/null | sort -V | tail -n 1)"
+if [ -n "$_go_bin" ] && [ -d "$_go_bin/bin" ]; then
+  PATH="$_go_bin/bin:$PATH"
+fi
+unset _go_bin
+
 # Add any other environment variables here
 # export EXAMPLE_VAR="${EXAMPLE_VAR:-default_value}" 
