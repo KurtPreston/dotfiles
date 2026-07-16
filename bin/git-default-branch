@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+# Print the canonical remote default branch name (e.g. master, main).
+# Refreshes origin/HEAD from the remote before resolving.
+
+set -euo pipefail
+
+git remote set-head origin --auto >/dev/null 2>&1 || true
+
+default_branch="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||' || true)"
+if [[ -z "$default_branch" ]]; then
+  echo "Could not determine remote default branch" >&2
+  exit 1
+fi
+
+echo "$default_branch"
