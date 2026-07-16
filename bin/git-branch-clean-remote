@@ -1,31 +1,47 @@
 #!/usr/bin/env bash
 
 # Git Branch Clean Remote
-# Clears out remote branches that have already been merged into the
-# canonical remote default branch (origin/HEAD), not the current checkout.
+# Clears out remote branches already present on the remote default branch,
+# including squash- and rebase-merged work (not just ancestry merges).
 
 set -euo pipefail
 
 git fetch --prune
 
 default_branch="$(git-default-branch)"
+into="origin/${default_branch}"
 
 echo "Checkout successful -- Updating/cleaning code"
 
-# Protected: remote default and common long-lived branches
-branches_to_delete="$(
-  git branch -r --merged "origin/${default_branch}" \
-    | grep 'origin/' \
-    | grep -v '->' \
-    | sed 's|^[[:space:]]*origin/||' \
-    | grep -v -x -F -e "$default_branch" -e master -e main -e staging \
-    | grep -v '^release' \
-    || true
-)"
+is_protected() {
+  local branch="$1"
+  [[ "$branch" == "$default_branch" || "$branch" == "master" || "$branch" == "main" || "$branch" == "staging" ]] && return 0
+  [[ "$branch" == release* ]] && return 0
+  return 1
+}
 
-if [[ -z "$branches_to_delete" ]]; then
+to_delete=()
+
+while IFS= read -r branch; do
+  [[ -z "$branch" || "$branch" == "HEAD" ]] && continue
+  is_protected "$branch" && continue
+
+  ref="origin/${branch}"
+  if git merge-base --is-ancestor "$ref" "$into" 2>/dev/null; then
+    to_delete+=("$branch")
+  elif git-branch-squash-merged "$ref" "$into"; then
+    to_delete+=("$branch")
+  fi
+done < <(
+  git branch -r --format='%(refname:short)' \
+    | grep '^origin/' \
+    | sed 's|^origin/||' \
+    || true
+)
+
+if [[ ${#to_delete[@]} -eq 0 ]]; then
   echo "No remote branches to delete"
-else
-  # shellcheck disable=SC2086
-  echo $branches_to_delete | xargs git push --delete origin
+  exit 0
 fi
+
+git push --delete origin "${to_delete[@]}"
