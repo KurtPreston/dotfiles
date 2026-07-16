@@ -1,12 +1,28 @@
 #!/usr/bin/env bash
 
 # Git Branch Clean Local
-# Clears out all local git branches that have already been merged into the active branch
+# Clears out all local git branches that have already been merged into the
+# canonical remote default branch (origin/HEAD), not the current checkout.
 
-# Define protected branches (these will not be cleaned)
-branches_to_delete="$( git branch --merged | grep -v '^\*' | grep -v 'master' | grep -v 'main' | grep -v 'staging' | grep -v '^release' )"
-if [[ "$branches_to_delete" == "" ]]; then
+set -euo pipefail
+
+git fetch --prune
+
+default_branch="$(git-default-branch)"
+
+# Protected: current branch, remote default, and common long-lived branches
+branches_to_delete="$(
+  git branch --merged "origin/${default_branch}" \
+    | grep -v '^\*' \
+    | sed 's/^[[:space:]]*//' \
+    | grep -v -x -F -e "$default_branch" -e master -e main -e staging \
+    | grep -v '^release' \
+    || true
+)"
+
+if [[ -z "$branches_to_delete" ]]; then
   echo "No branches to delete"
 else
+  # shellcheck disable=SC2086
   echo $branches_to_delete | xargs git branch -d
 fi

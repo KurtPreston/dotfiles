@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 
 # Git Branch Clean
-# Cleans out local and remote branches, then runs git gc
+# Cleans out local and remote branches merged into the remote default, then gc
 
-# Run local branch cleanup
+set -euo pipefail
+
+# Run local branch cleanup (fetches first, then deletes local merged branches)
 echo "Cleaning local branches..."
 git-branch-clean-local
 
-# Run remote branch cleanup
+# Run remote branch cleanup (fetches again, then deletes remote merged branches)
 echo "Cleaning remote branches..."
 git-branch-clean-remote
 

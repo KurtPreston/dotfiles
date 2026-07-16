@@ -1,20 +1,31 @@
 #!/usr/bin/env bash
 
 # Git Branch Clean Remote
-# Clears out all remote branches that have already been merged
+# Clears out remote branches that have already been merged into the
+# canonical remote default branch (origin/HEAD), not the current checkout.
 
-# Fetch remote branches and clear refs to deleted ones
+set -euo pipefail
+
 git fetch --prune
 
-if [ $? -eq 0 ]; then
-  echo "Checkout successful -- Updating/cleaning code"
+default_branch="$(git-default-branch)"
 
-  branches_to_delete="$(git branch -r --merged | grep -v '^\*' | grep -v 'origin/master' | grep -v 'origin/main' | grep -v 'origin/staging' | grep -v 'origin/release' | grep 'origin/' | sed 's/origin\///g')"
-  if [[ "$branches_to_delete" == "" ]]; then
-    echo "No remote branches to delete"
-  else
-    echo $branches_to_delete | xargs git push --delete origin
-  fi
+echo "Checkout successful -- Updating/cleaning code"
+
+# Protected: remote default and common long-lived branches
+branches_to_delete="$(
+  git branch -r --merged "origin/${default_branch}" \
+    | grep 'origin/' \
+    | grep -v '->' \
+    | sed 's|^[[:space:]]*origin/||' \
+    | grep -v -x -F -e "$default_branch" -e master -e main -e staging \
+    | grep -v '^release' \
+    || true
+)"
+
+if [[ -z "$branches_to_delete" ]]; then
+  echo "No remote branches to delete"
 else
-  echo "Checkout unsuccessful -- Commit any working changes"
+  # shellcheck disable=SC2086
+  echo $branches_to_delete | xargs git push --delete origin
 fi
