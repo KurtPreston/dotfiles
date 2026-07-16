@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+# Exit 0 if BRANCH's net changes are already present in INTO (e.g. origin/main),
+# even when the branch was squash- or rebase-merged. Exit 1 otherwise.
+#
+# Inspired by grove's BranchSquashMerged: synthesize a commit with BRANCH's tree
+# parented on the merge-base, then ask `git cherry` whether that patch is already
+# upstream. A leading "-" means an equivalent patch exists in INTO.
+#
+# Usage: git-branch-squash-merged <branch> <into>
+
+set -euo pipefail
+
+if [[ $# -ne 2 ]]; then
+  echo "Usage: git-branch-squash-merged <branch> <into>" >&2
+  exit 2
+fi
+
+branch="$1"
+into="$2"
+
+base="$(git merge-base "$into" "$branch" 2>/dev/null || true)"
+if [[ -z "$base" ]]; then
+  exit 1
+fi
+
+tree="$(git rev-parse "${branch}^{tree}" 2>/dev/null || true)"
+if [[ -z "$tree" ]]; then
+  exit 1
+fi
+
+virt="$(git commit-tree "$tree" -p "$base" -m "_" 2>/dev/null || true)"
+if [[ -z "$virt" ]]; then
+  exit 1
+fi
+
+out="$(git cherry "$into" "$virt" 2>/dev/null || true)"
+[[ "$(echo "$out" | head -n1 | cut -c1)" == "-" ]]
