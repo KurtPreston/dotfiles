@@ -18,6 +18,22 @@ is_protected() {
   return 1
 }
 
+# Squash/rebase detection relies on `git cherry` (patch-ids), which reads blob
+# content. On a blobless partial clone that would lazy-fetch every diffed blob
+# from the remote, so we fall back to ancestry-only detection there to avoid a
+# fetch stampede.
+is_partial_clone() {
+  [[ "$(git config --get remote.origin.promisor 2>/dev/null)" == "true" ]] && return 0
+  [[ -n "$(git config --get remote.origin.partialclonefilter 2>/dev/null)" ]] && return 0
+  return 1
+}
+
+detect_squash=1
+if is_partial_clone; then
+  echo "Partial (blobless) clone detected; skipping squash/rebase-merge detection (ancestry-only)." >&2
+  detect_squash=0
+fi
+
 merged_to_delete=()
 squash_to_delete=()
 
@@ -27,7 +43,7 @@ while IFS= read -r branch; do
 
   if git merge-base --is-ancestor "$branch" "$into" 2>/dev/null; then
     merged_to_delete+=("$branch")
-  elif git-branch-squash-merged "$branch" "$into"; then
+  elif [[ "$detect_squash" == 1 ]] && git-branch-squash-merged "$branch" "$into"; then
     squash_to_delete+=("$branch")
   fi
 done < <(git branch --format='%(refname:short)' | grep -v -x -F "$(git branch --show-current)" || true)

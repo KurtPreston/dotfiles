@@ -11,6 +11,12 @@
 
 set -euo pipefail
 
+# Never let the patch-id comparison trigger on-demand fetches: on a blobless
+# partial clone `git cherry` would otherwise lazy-fetch every blob it diffs.
+# With this set, a partial clone simply reports "not merged" (exit 1) so the
+# caller keeps the branch rather than stampeding the remote.
+export GIT_NO_LAZY_FETCH=1
+
 if [[ $# -ne 2 ]]; then
   echo "Usage: git-branch-squash-merged <branch> <into>" >&2
   exit 2
