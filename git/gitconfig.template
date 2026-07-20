@@ -43,3 +43,10 @@
   side-by-side = false
 [pull]
 	rebase = false
+# Safe maintenance defaults. Prefer `git maintenance run` over manual
+# `git gc`/`git prune`, especially on partial (blobless) clones where aggressive
+# pruning can drop lazily-fetched objects. Register a repo with `git maintenance start`.
+[gc]
+	cruftPacks = true
+[fetch]
+	writeCommitGraph = true
