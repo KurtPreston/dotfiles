@@ -13,6 +13,8 @@ git-branch-clean-local
 echo "Cleaning remote branches..."
 git-branch-clean-remote
 
-# Run git gc
-echo "Running git gc..."
-git gc
+# Run git maintenance instead of `git gc`. Plain `git gc` (and especially
+# `--prune`) can drop lazily-fetched objects on a partial clone; `git maintenance
+# run` uses cruft packs and partial-clone-safe tasks.
+echo "Running git maintenance..."
+git maintenance run --task=gc
