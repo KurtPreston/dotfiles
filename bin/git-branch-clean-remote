@@ -6,12 +6,24 @@
 
 set -euo pipefail
 
+# Progress helpers: only draw an in-place status line when stderr is a terminal,
+# so piped/logged runs stay clean.
+progress() {
+  [[ -t 2 ]] && printf '\r\033[K  [%d/%d] %s' "$1" "$2" "$3" >&2
+  return 0
+}
+clear_progress() {
+  [[ -t 2 ]] && printf '\r\033[K' >&2
+  return 0
+}
+
+echo "Fetching latest refs from origin (git fetch --prune)..."
 git fetch --prune
 
+echo "Resolving remote default branch..."
 default_branch="$(git-default-branch)"
 into="origin/${default_branch}"
-
-echo "Checkout successful -- Updating/cleaning code"
+echo "Comparing remote branches against ${into}"
 
 is_protected() {
   local branch="$1"
@@ -38,8 +50,24 @@ fi
 
 to_delete=()
 
+branches=()
 while IFS= read -r branch; do
   [[ -z "$branch" || "$branch" == "HEAD" ]] && continue
+  branches+=("$branch")
+done < <(
+  git branch -r --format='%(refname:short)' \
+    | grep '^origin/' \
+    | sed 's|^origin/||' \
+    || true
+)
+
+total=${#branches[@]}
+echo "Examining ${total} remote branch(es) for merged/squashed work..."
+
+i=0
+for branch in "${branches[@]}"; do
+  i=$((i + 1))
+  progress "$i" "$total" "$branch"
   is_protected "$branch" && continue
 
   ref="origin/${branch}"
@@ -48,12 +76,9 @@ while IFS= read -r branch; do
   elif [[ "$detect_squash" == 1 ]] && git-branch-squash-merged "$ref" "$into"; then
     to_delete+=("$branch")
   fi
-done < <(
-  git branch -r --format='%(refname:short)' \
-    | grep '^origin/' \
-    | sed 's|^origin/||' \
-    || true
-)
+done
+clear_progress
+echo "Found ${#to_delete[@]} remote branch(es) to delete."
 
 if [[ ${#to_delete[@]} -eq 0 ]]; then
   echo "No remote branches to delete"
