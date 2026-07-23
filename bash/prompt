@@ -19,6 +19,21 @@ c_bold=`tty -s && tput bold`
 np_start=$'\001'
 np_end=$'\002'
 
+# ---------------------------------------------------------------------------
+# Two prompt modes, selected at render time by the DYNAMIC_BASH_PROMPT env var
+# (see __prompt_dispatch at the bottom):
+#
+#   * default / falsey : the original static prompt (promptvars on, PS1 is a
+#     template that bash expands each render).
+#   * truthy           : a single-line prompt that measures $COLUMNS and
+#     truncates so it can never wrap. Wrapping + colors is what triggers the
+#     readline 8.1 redisplay corruption, so keeping it to one line avoids it.
+#
+# The choice is made per-render rather than once at source time because this
+# file is sourced before ~/.localrc / shared/env, so an env var set there would
+# otherwise be read too late; runtime selection also lets you toggle it live.
+# ---------------------------------------------------------------------------
+
 parse_git_branch ()
 {
   if git rev-parse --git-dir >/dev/null 2>&1; then
@@ -60,6 +75,12 @@ branch_color ()
   fi
 }
 
+# ------------------------------- static mode -------------------------------
+# These helpers reproduce the original prompt. git_prompt_segment and
+# show_host_if_remote emit raw \001/\002 because they run via command
+# substitution at prompt time; show_colored_user/show_path use the \[ / \] form
+# because their output is baked into the PS1 template when it is assigned.
+
 git_prompt_segment ()
 {
   local branch
@@ -79,8 +100,6 @@ show_host_if_remote ()
   fi
 }
 
-# These helpers only ever run when PS1 is assigned, so they can safely use
-# the \[ / \] form that bash decodes in the template.
 show_colored_user ()
 {
   if [[ "$(whoami)" = "root" ]]; then
@@ -95,4 +114,203 @@ show_path ()
   echo -ne '\[${c_cyan}\]\w'
 }
 
-PS1='$(git_prompt_segment)'"$(show_colored_user)"'@$(show_host_if_remote)'"$(show_path)"'\[${c_default}\]: '
+# The static template, assembled once (the double-quoted helpers bake their
+# template text in at assignment time, exactly as the original PS1 did).
+__static_ps1='$(git_prompt_segment)'"$(show_colored_user)"'@$(show_host_if_remote)'"$(show_path)"'\[${c_default}\]: '
+
+# ------------------------------ dynamic mode -------------------------------
+# Cache the pieces that never change within a session so we don't shell out for
+# them on every prompt.
+__prompt_user=$(whoami)
+if [[ "$__prompt_user" == "root" ]]; then
+  __prompt_user_color=$c_red
+else
+  __prompt_user_color=$c_white
+fi
+__prompt_host=$(hostname)
+
+# Escape backslashes so bash's prompt decoder (which still runs its backslash
+# pass even with promptvars off) treats a path/branch containing a literal
+# backslash as text rather than an escape like \w or \[.
+__prompt_pesc ()
+{
+  local s=$1
+  printf '%s' "${s//\\/\\\\}"
+}
+
+# Left-ellipsize $1 to at most $2 visible columns, keeping the tail and (when
+# possible) starting the kept portion on a path separator: e.g. a deep cwd
+# becomes "…/dddddd/grid_cells".
+__prompt_ltrunc ()
+{
+  local s=$1 max=$2
+  local n=${#s}
+  if (( max <= 0 )); then
+    printf ''
+  elif (( n <= max )); then
+    printf '%s' "$s"
+  elif (( max == 1 )); then
+    printf '…'
+  else
+    local keep=$(( max - 1 ))
+    local tail=${s: -keep}
+    if [[ "$tail" == */* ]]; then
+      tail=/${tail#*/}
+    fi
+    printf '…%s' "$tail"
+  fi
+}
+
+# Right-ellipsize $1 to at most $2 visible columns, keeping the front: e.g. a
+# long branch becomes "feature/SALSA-12675-lo…".
+__prompt_rtrunc ()
+{
+  local s=$1 max=$2
+  local n=${#s}
+  if (( max <= 0 )); then
+    printf ''
+  elif (( n <= max )); then
+    printf '%s' "$s"
+  elif (( max == 1 )); then
+    printf '…'
+  else
+    printf '%s…' "${s:0:max-1}"
+  fi
+}
+
+# Assemble a single-line prompt that always fits within COLUMNS-1 visible
+# columns, so it can never wrap. Assigns PS1 fully expanded.
+#
+# Layout (matching the static prompt):  [branch] user@host<cwd>:
+# Truncation policy: shrink the cwd first (left-ellipsis), then the branch
+# (right-ellipsis); a final clamp guarantees the width bound even in a tiny
+# terminal.
+__build_prompt ()
+{
+  local budget=$(( ${COLUMNS:-80} - 1 ))
+  (( budget < 0 )) && budget=0
+  local sepw=2   # width of the trailing ": "
+
+  # --- gather dynamic segments ---
+  local branch bcolor branch_present=0 branchw=0
+  branch=$(parse_git_branch)
+  if [[ -n "$branch" ]]; then
+    branch_present=1
+    bcolor=$(branch_color)
+    branchw=${#branch}
+  fi
+
+  local host=""
+  if [[ -n "$SSH_CONNECTION" ]]; then
+    host=$__prompt_host
+  fi
+
+  # cwd, rendered \w-style (collapse $HOME to ~).
+  local cwd=$PWD
+  if [[ "$cwd" == "$HOME" ]]; then
+    cwd='~'
+  elif [[ -n "$HOME" && "$cwd" == "$HOME"/* ]]; then
+    cwd='~'${cwd#"$HOME"}
+  fi
+
+  # --- widths ---
+  # braces = '[' + '] ' around the branch; fixed = user + '@' + host + ': '.
+  local braces=0
+  (( branch_present )) && braces=3
+  local fixed=$(( ${#__prompt_user} + 1 + ${#host} + sepw ))
+  local total=$(( braces + branchw + fixed + ${#cwd} ))
+
+  # 1) shrink the cwd to fit.
+  if (( total > budget )); then
+    local cwd_allowed=$(( budget - braces - branchw - fixed ))
+    (( cwd_allowed < 0 )) && cwd_allowed=0
+    cwd=$(__prompt_ltrunc "$cwd" "$cwd_allowed")
+    total=$(( braces + branchw + fixed + ${#cwd} ))
+  fi
+
+  # 2) still too long? shrink the branch.
+  if (( total > budget && branch_present )); then
+    local branch_allowed=$(( budget - braces - fixed - ${#cwd} ))
+    (( branch_allowed < 0 )) && branch_allowed=0
+    branch=$(__prompt_rtrunc "$branch" "$branch_allowed")
+    branchw=${#branch}
+  fi
+
+  # --- build the inner tokens (everything except the trailing ": ") ---
+  local -a txt=() col=()
+  if (( branch_present )); then
+    txt+=("[");         col+=("$c_default")
+    txt+=("$branch");   col+=("$bcolor")
+    txt+=("] ");        col+=("$c_default")
+  fi
+  txt+=("$__prompt_user"); col+=("$__prompt_user_color")
+  txt+=("@");              col+=("$c_white")
+  if [[ -n "$host" ]]; then
+    txt+=("$host");        col+=("$c_blue")
+  fi
+  txt+=("$cwd");           col+=("$c_cyan")
+
+  # --- emit, clamping inner tokens so total stays within budget ---
+  # inner_budget reserves room for the ": " so the separator always survives.
+  local inner_budget=$(( budget - sepw ))
+  (( inner_budget < 0 )) && inner_budget=0
+
+  local out="" used=0 i room t
+  for (( i = 0; i < ${#txt[@]}; i++ )); do
+    t=${txt[i]}
+    [[ -z "$t" ]] && continue
+    room=$(( inner_budget - used ))
+    (( room <= 0 )) && break
+    (( ${#t} > room )) && t=${t:0:room}
+    out+="${np_start}${col[i]}${np_end}$(__prompt_pesc "$t")"
+    used=$(( used + ${#t} ))
+  done
+
+  if (( budget >= sepw )); then
+    out+="${np_start}${c_default}${np_end}: "
+  elif (( budget >= 1 )); then
+    out+="${np_start}${c_default}${np_end}:"
+  fi
+  out+="${np_start}${c_default}${np_end}"
+
+  PS1=$out
+}
+
+# --------------------------------- dispatch --------------------------------
+# Treat unset/empty and the usual falsey words as "off"; anything else is "on".
+__prompt_truthy ()
+{
+  case "${1,,}" in
+    ''|0|false|no|off|n|f) return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
+# Runs from PROMPT_COMMAND on every render: pick the mode and set PS1. Preserves
+# $? for the PROMPT_COMMAND hooks that run after us (nvm, git auto-checkout).
+__prompt_dispatch ()
+{
+  local exit_code=$?
+  if __prompt_truthy "$DYNAMIC_BASH_PROMPT"; then
+    # Fully pre-expanded PS1 -- disable prompt-string expansion so a path or
+    # branch containing $(...) / `...` is treated as literal text.
+    shopt -u promptvars
+    __build_prompt
+  else
+    # Static template relies on prompt-string expansion.
+    shopt -s promptvars
+    PS1=$__static_ps1
+  fi
+  return $exit_code
+}
+
+# Recompute the prompt on every render. Append so we coexist with history's
+# `history -a`, nvm auto-use, and git auto-checkout, which also hook
+# PROMPT_COMMAND. Use a plain substring guard (PROMPT_COMMAND is "; "-separated,
+# so the ":name:" idiom used elsewhere would not actually match here).
+if [[ "$PROMPT_COMMAND" != *"__prompt_dispatch"* ]]; then
+  PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND; }__prompt_dispatch"
+fi
+
+# Set PS1 now so the first prompt is correct even before PROMPT_COMMAND runs.
+__prompt_dispatch
