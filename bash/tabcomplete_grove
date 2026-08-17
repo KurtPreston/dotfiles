@@ -1,0 +1,10 @@
+# Grove tab completion (bash)
+for _grove_comp in \
+  "${CODE_HOME:-$HOME/Code}/grove/shell/grove-completion.bash" \
+  "${XDG_DATA_HOME:-$HOME/.local/share}/grove/grove-completion.bash"; do
+  if [[ -f "$_grove_comp" ]]; then
+    source "$_grove_comp"
+    break
+  fi
+done
+unset _grove_comp

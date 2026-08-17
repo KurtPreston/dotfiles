@@ -98,7 +98,8 @@ The worktree workflow tool formerly bundled here now lives in its own
 repo: [grove](https://github.com/KurtPreston/grove) (command `grove`).
 These dotfiles automatically source grove's shell integration when it is installed
 at `$CODE_HOME/grove` (see [`shared/functions`](shared/functions) and
-[`fish/functions.fish`](fish/functions.fish)), and the tmux window colors in
+[`fish/functions.fish`](fish/functions.fish)), load branch-name tab completion from
+the same checkout via `tabcomplete_grove`, and the tmux window colors in
 [`tmux/tmux.conf`](tmux/tmux.conf) read the `@grove_bg`/`@grove_fg` options grove's
 `tmux` recipe sets. Install grove from its repo to get the `grove` command.
 
