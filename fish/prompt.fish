@@ -12,44 +12,58 @@ set -g __fish_prompt_colors_purple (set_color purple)
 set -g __fish_prompt_colors_cyan (set_color cyan)
 set -g __fish_prompt_colors_white (set_color white)
 
+# Command prefix that caps how long a prompt-time git call may hang. Expands to
+# nothing when timeout is unavailable.
+function __git_prompt_timeout
+    if command -v timeout >/dev/null
+        echo timeout
+        echo 1s
+    end
+end
+
+# Names the commit a detached HEAD is sitting on: a local branch on that commit
+# if there is one, otherwise a remote-tracking branch, origin first.
+# refs/remotes/<remote>/HEAD points at the remote's default branch rather than
+# being a branch itself, and sorts ahead of the real ones, so filter it out.
+function __git_branch_at_head
+    set -l t (__git_prompt_timeout)
+
+    set -l branch ($t git for-each-ref --count=1 --format='%(refname:short)' --points-at HEAD refs/heads/ 2>/dev/null)
+    if test -n "$branch"
+        echo $branch
+        return 0
+    end
+
+    set -l remotes ($t git for-each-ref --format='%(refname:short)' --points-at HEAD refs/remotes/ 2>/dev/null | string match -v '*/HEAD')
+    for ref in $remotes
+        if string match -q 'origin/*' $ref
+            echo $ref
+            return 0
+        end
+    end
+
+    if test (count $remotes) -gt 0
+        echo $remotes[1]
+    end
+end
+
 # Parse git branch with timeout and error handling
 function parse_git_branch
-    # Use timeout to prevent hanging
-    if command -v timeout >/dev/null
-        timeout 1s git rev-parse --git-dir >/dev/null 2>&1
-        if test $status -eq 0
-            set gitver (timeout 1s git branch 2>/dev/null | sed -n '/^\*/s/^\* //p' | head -1)
+    set -l t (__git_prompt_timeout)
+
+    $t git rev-parse --git-dir >/dev/null 2>&1
+    or return 0
+
+    set -l gitver ($t git symbolic-ref --short -q HEAD 2>/dev/null)
+
+    if test -z "$gitver"
+        set -l branch (__git_branch_at_head)
+        if test -z "$branch"
+            set branch ($t git rev-parse --short HEAD 2>/dev/null)
         end
-    else
-        # Fallback without timeout
-        if git rev-parse --git-dir >/dev/null 2>&1
-            set gitver (git branch 2>/dev/null | sed -n '/^\*/s/^\* //p' | head -1)
-        end
+        set gitver "$branch (detached)"
     end
-    
-    # If we're on a detached HEAD (gitver will be like "(HEAD detached at abc1234)")
-    if test -n "$gitver"; and string match -rq '^\(HEAD detached at [a-f0-9]+\)$' "$gitver"
-        set current_sha (git rev-parse HEAD 2>/dev/null)
-        set short_sha (git rev-parse --short HEAD 2>/dev/null)
-        if test -n "$current_sha"
-            # Check if current SHA matches any local branch
-            set matching_branch ""
-            for branch in (git for-each-ref --format='%(refname:short)' refs/heads/ 2>/dev/null)
-                set branch_sha (git rev-parse "$branch" 2>/dev/null)
-                if test "$branch_sha" = "$current_sha"
-                    set matching_branch "$branch"
-                    break
-                end
-            end
-            
-            if test -n "$matching_branch"
-                set gitver "$matching_branch (detached)"
-            else
-                set gitver "$short_sha (detached)"
-            end
-        end
-    end
-    
+
     echo "$gitver"
 end
 
