@@ -48,6 +48,24 @@ if is_partial_clone; then
   detect_squash=0
 fi
 
+# `git branch -d` refuses branches that are not merged into HEAD (or their own
+# upstream), which is a different question than the ancestry check below against
+# $into, so it fails whenever HEAD sits on an unrelated branch. Deletion also
+# fails for branches checked out in another worktree. Delete one at a time with
+# -D so a single refusal does not abort the rest of the cleanup.
+delete_branches() {
+  local branch
+  local failed=()
+
+  for branch in "$@"; do
+    git branch -D "$branch" || failed+=("$branch")
+  done
+
+  if [[ ${#failed[@]} -gt 0 ]]; then
+    echo "Could not delete ${#failed[@]} branch(es): ${failed[*]}" >&2
+  fi
+}
+
 merged_to_delete=()
 squash_to_delete=()
 
@@ -81,9 +99,9 @@ if [[ ${#merged_to_delete[@]} -eq 0 && ${#squash_to_delete[@]} -eq 0 ]]; then
 fi
 
 if [[ ${#merged_to_delete[@]} -gt 0 ]]; then
-  git branch -d "${merged_to_delete[@]}"
+  delete_branches "${merged_to_delete[@]}"
 fi
 if [[ ${#squash_to_delete[@]} -gt 0 ]]; then
   echo "Deleting squash/rebase-merged branches: ${squash_to_delete[*]}"
-  git branch -D "${squash_to_delete[@]}"
+  delete_branches "${squash_to_delete[@]}"
 fi
