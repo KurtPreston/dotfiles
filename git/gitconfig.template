@@ -11,7 +11,6 @@
   sup = !sh -c 'git submodule update --init --recursive && git submodule status'
   pup = !sh -c 'git submodule update --init --recursive && git submodule status'
   su = !sh -c 'git submodule -q foreach git pull -q origin master'
-  ignore = update-index --assume-unchanged
   unignore = update-index --no-assume-unchanged
   ignored = !git ls-files -v | grep "^[[:lower:]]"
   rs = submodule foreach git reset --hard
