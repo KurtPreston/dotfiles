@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+# git ignore <path>... — stop a file from showing up in `git status`.
+#
+# For a path git already tracks, set the assume-unchanged bit so local edits
+# are ignored (git update-index --assume-unchanged). For a path git does not
+# track, add an anchored, repo-root-relative entry to .git/info/exclude so it
+# no longer appears as untracked. Existing exclude entries are not duplicated.
+#
+# Paths are interpreted relative to the current directory and should be at or
+# below it; glob metacharacters (*, ?, [, ]) are written literally, not escaped.
+#
+# Usage: git ignore <path>...
+
+set -euo pipefail
+
+if [ "$#" -eq 0 ]; then
+  echo "Usage: git ignore <path>..." >&2
+  exit 2
+fi
+
+# External git subcommands run from the current directory (unlike `!` aliases,
+# which run from the repo top-level with GIT_PREFIX set), so derive the
+# repo-root prefix here to anchor exclude entries correctly from a subdirectory.
+prefix="$(git rev-parse --show-prefix)"
+exclude="$(git rev-parse --git-path info/exclude)"
+mkdir -p "$(dirname "$exclude")"
+
+for path in "$@"; do
+  if git ls-files --error-unmatch -- "$path" >/dev/null 2>&1; then
+    git update-index --assume-unchanged -- "$path"
+    echo "assume-unchanged: $path"
+  else
+    entry="/$prefix$path"
+    if grep -qxF "$entry" "$exclude" 2>/dev/null; then
+      echo "already ignored: $entry"
+    else
+      echo "$entry" >> "$exclude"
+      echo "ignoring (via .git/info/exclude): $entry"
+    fi
+  fi
+done
