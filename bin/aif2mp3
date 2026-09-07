@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+# Convert .aif / .aiff files to .mp3 with ffmpeg.
+#
+# With a filename: convert that file.
+# With no args: convert every .aif / .aiff in the current directory.
+#
+# Usage: aif2mp3 [file.aif|file.aiff]
+
+set -euo pipefail
+
+if ! command -v ffmpeg >/dev/null 2>&1; then
+  echo "error: ffmpeg not found" >&2
+  exit 1
+fi
+
+convert_one() {
+  local src="$1"
+  local dest="${src%.*}.mp3"
+
+  if [[ ! -f "$src" ]]; then
+    echo "error: file not found: $src" >&2
+    return 1
+  fi
+
+  echo "Converting: $src -> $dest"
+  ffmpeg -i "$src" -y -codec:a libmp3lame -qscale:a 2 "$dest"
+}
+
+if [[ $# -gt 0 ]]; then
+  for src in "$@"; do
+    convert_one "$src"
+  done
+  exit 0
+fi
+
+shopt -s nullglob
+files=(*.aif *.aiff *.AIF *.AIFF)
+shopt -u nullglob
+
+if [[ ${#files[@]} -eq 0 ]]; then
+  echo "No .aif or .aiff files found in the current directory." >&2
+  exit 1
+fi
+
+for src in "${files[@]}"; do
+  convert_one "$src"
+done
