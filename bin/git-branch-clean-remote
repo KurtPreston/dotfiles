@@ -80,9 +80,33 @@ done
 clear_progress
 echo "Found ${#to_delete[@]} remote branch(es) to delete."
 
+# A bulk `git push --delete origin b1 b2 ...` aborts on the first missing ref
+# (e.g. if someone deletes a branch while this script runs). Delete one at a
+# time so the rest still go through.
+delete_remote_branches() {
+  local branch
+  local failed=()
+  local output
+
+  for branch in "$@"; do
+    if ! output=$(git push --delete origin "$branch" 2>&1); then
+      if [[ "$output" == *"remote ref does not exist"* ]]; then
+        : # already gone
+      else
+        echo "$output" >&2
+        failed+=("$branch")
+      fi
+    fi
+  done
+
+  if [[ ${#failed[@]} -gt 0 ]]; then
+    echo "Could not delete ${#failed[@]} remote branch(es): ${failed[*]}" >&2
+  fi
+}
+
 if [[ ${#to_delete[@]} -eq 0 ]]; then
   echo "No remote branches to delete"
   exit 0
 fi
 
-git push --delete origin "${to_delete[@]}"
+delete_remote_branches "${to_delete[@]}"
