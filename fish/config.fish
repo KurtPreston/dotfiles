@@ -52,6 +52,11 @@ if type -q rbenv
     rbenv init - fish | source
 end
 
+# Load rustup/cargo if available
+if test -s ~/.cargo/env.fish
+    source ~/.cargo/env.fish
+end
+
 # Source local configuration if it exists (before tab completion to allow CODE_HOME override)
 if test -f ~/.localrc
     source ~/.localrc
