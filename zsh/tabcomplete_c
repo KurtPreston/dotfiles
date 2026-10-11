@@ -3,13 +3,10 @@
 # Completion function for 'c' alias
 _c_completion() {
     local code_home="${CODE_HOME:-$HOME/Code}"
-    
-    # Only provide completions if CODE_HOME directory exists
+
+    # Complete directories (including nested paths) relative to CODE_HOME
     if [[ -d "$code_home" ]]; then
-        # Get directories in CODE_HOME (excluding hidden directories)
-        local -a dirs
-        dirs=(${code_home}/*(/:t))
-        _describe 'directories' dirs
+        _path_files -W "$code_home" -/
     fi
 }
 

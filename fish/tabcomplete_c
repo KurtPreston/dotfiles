@@ -3,15 +3,14 @@
 # Completion for 'c' alias
 function __c_complete
     set -l code_home (test -n "$CODE_HOME"; and echo $CODE_HOME; or echo "$HOME/Code")
-    
+
     # Only provide completions if CODE_HOME directory exists
-    if test -d "$code_home"
-        # Get directories in CODE_HOME
-        for dir in "$code_home"/*
-            if test -d "$dir"
-                basename "$dir"
-            end
-        end
+    test -d "$code_home"; or return
+
+    # Match directories (including nested paths) relative to CODE_HOME
+    set -l token (commandline -ct)
+    for dir in "$code_home"/$token*/
+        string replace -- "$code_home/" "" $dir
     end
 end
 
