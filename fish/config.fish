@@ -76,4 +76,9 @@ source ~/.dotfiles/fish/prompt.fish
 # Source keybindings
 source ~/.dotfiles/fish/keybindings
 
+# Put the agentbox shims first on PATH, after nvm and rvm above (see shared/agentbox)
+if test -d ~/.local/share/agentbox/shims
+    fish_add_path --global --move --prepend ~/.local/share/agentbox/shims
+end
+
 # Fish-specific configuration can be added here
