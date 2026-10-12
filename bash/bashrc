@@ -12,7 +12,7 @@ source ~/.dotfiles/shared/env
 
 # Source other shared files
 for file in ~/.dotfiles/shared/*; do
-    if [[ "$file" != ~/.dotfiles/shared/env ]]; then
+    if [[ "$file" != ~/.dotfiles/shared/env && "$file" != ~/.dotfiles/shared/agentbox ]]; then
         source "$file"
     fi
 done
@@ -21,6 +21,9 @@ done
 if [[ -f ~/.localrc ]]; then
     source ~/.localrc
 fi
+
+# Put the agentbox shims first on PATH, after every version manager above
+source ~/.dotfiles/shared/agentbox
 
 # Source tab completion functions (after local config to use any env var overrides)
 for file in ~/.dotfiles/bash/tabcomplete*; do

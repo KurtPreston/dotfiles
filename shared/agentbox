@@ -1,0 +1,15 @@
+# agentbox shims: in Linux-only workspaces, node, npm, and friends run in the
+# workspace VM (see agentbox's docs/linux-only.md); elsewhere they hand off to
+# the real commands. Sourced last, after nvm, rbenv, and rvm add their
+# directories, so the shims stay first; nvm's later `nvm use` on cd swaps its
+# own directory where it is. A no-op on machines without agentbox.
+_agentbox_shims="$HOME/.local/share/agentbox/shims"
+if [ -d "$_agentbox_shims" ]; then
+  # Drop any earlier copy, as in nested shells, then put the shims first
+  PATH=":$PATH:"
+  PATH="${PATH//:$_agentbox_shims:/:}"
+  PATH="${PATH#:}"
+  PATH="${PATH%:}"
+  PATH="$_agentbox_shims:$PATH"
+fi
+unset _agentbox_shims
