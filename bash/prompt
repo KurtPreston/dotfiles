@@ -287,10 +287,15 @@ __build_prompt ()
 # Treat unset/empty and the usual falsey words as "off"; anything else is "on".
 __prompt_truthy ()
 {
-  case "${1,,}" in
-    ''|0|false|no|off|n|f) return 1 ;;
-    *) return 0 ;;
+  # nocasematch rather than ${1,,}, which needs bash 4 (macOS ships 3.2).
+  local rc=0 was_set=0
+  shopt -q nocasematch && was_set=1
+  shopt -s nocasematch
+  case "$1" in
+    ''|0|false|no|off|n|f) rc=1 ;;
   esac
+  (( was_set )) || shopt -u nocasematch
+  return $rc
 }
 
 # Runs from PROMPT_COMMAND on every render: pick the mode and set PS1. Preserves
