@@ -22,37 +22,41 @@ __git_branch_at_head() {
   printf '%s' "${branch:-$(printf '%s\n' "$remotes" | head -n1)}"
 }
 
-parse_git_branch() {
-  local branch gitver
-
-  if git rev-parse --git-dir >/dev/null 2>&1; then
-    gitver=$(git symbolic-ref --short -q HEAD)
-
-    if [[ -z "$gitver" ]]; then
-      branch=$(__git_branch_at_head)
-      gitver="${branch:-$(git rev-parse --short HEAD 2>/dev/null)} (detached)"
-    fi
-
-    echo "$gitver"
-  fi
-}
-
-branch_color() {
-  if git rev-parse --git-dir >/dev/null 2>&1; then
-    if git diff --quiet 2>/dev/null >&2; then
-      echo "%F{green}"
-    else
-      echo "%F{red}"
-    fi
-  fi
-}
-
+# Branch name plus green/red for clean/dirty, where dirty means unstaged or
+# conflicted changes to tracked files. Each git call costs a full process
+# start, so a single `git status` supplies both.
+# status must keep its default optional locking (no GIT_OPTIONAL_LOCKS=0): that
+# is what lets it write the refreshed index back, so after a pull or build
+# touches many files only one prompt pays to re-check them. `git diff` can't
+# repair files written in the same second as the index, and re-reads them on
+# every prompt until something else rewrites it.
 git_prompt() {
-  local branch=$(parse_git_branch)
-  if [[ -n "$branch" ]]; then
-    local color=$(branch_color)
-    echo "[$color$branch%f] "
+  local out branch rc=0 color="%F{green}"
+
+  if out=$(git status --porcelain=v2 --branch --untracked-files=no --no-ahead-behind 2>&1); then
+    branch=${out#*'# branch.head '}
+    branch=${branch%%$'\n'*}
+    # Entries are "1 XY ..." / "2 XY ..." (Y is the unstaged state, '.' when
+    # none) or "u ..." for conflicts; staged-only changes stay green.
+    [[ $'\n'$out == *$'\n'[12]' '?[^.]* || $'\n'$out == *$'\n''u '* ]] && color="%F{red}"
+    [[ "$branch" == "(detached)" ]] && rc=1
+  else
+    [[ "$out" == *"not a git repository"* ]] && return 0
+    # No work tree (inside .git, or a bare repo), so status can't report
+    # changes. Exit status 0 means on a branch, 1 a detached HEAD.
+    branch=$(git symbolic-ref --short -q HEAD 2>/dev/null)
+    rc=$?
+    (( rc > 1 )) && return 0
+    color="%F{red}"
   fi
+
+  if (( rc == 1 )); then
+    branch=$(__git_branch_at_head)
+    branch="${branch:-$(git rev-parse --short HEAD 2>/dev/null)} (detached)"
+  fi
+
+  # Escape % so a branch name can't inject prompt sequences.
+  echo "[$color${branch//\%/%%}%f] "
 }
 
 show_host_if_remote() {
@@ -61,12 +65,10 @@ show_host_if_remote() {
   fi
 }
 
+# Prompt escapes rather than whoami, which would fork twice per prompt: %n is
+# the user name and %(!.a.b) picks a when running with root privileges.
 show_colored_user() {
-  if [[ "$(whoami)" = "root" ]]; then
-    echo "%F{red}$(whoami)%f"
-  else
-    echo "$(whoami)"
-  fi
+  echo '%(!.%F{red}%n%f.%n)'
 }
 
 show_path() {

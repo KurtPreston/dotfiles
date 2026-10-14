@@ -53,33 +53,45 @@ __git_branch_at_head ()
   printf '%s' "${branch:-$(printf '%s\n' "$remotes" | head -n1)}"
 }
 
-parse_git_branch ()
+# Sets __git_prompt_branch (empty outside a repo) and __git_prompt_color
+# (green when clean, red when tracked files have unstaged or conflicted
+# changes). Each git call costs a full process start, so a single `git status`
+# supplies both, and this sets globals rather than running in a $(...) subshell.
+# status must keep its default optional locking (no GIT_OPTIONAL_LOCKS=0): that
+# is what lets it write the refreshed index back, so after a pull or build
+# touches many files only one prompt pays to re-check them. `git diff` can't
+# repair files written in the same second as the index, and re-reads them on
+# every prompt until something else rewrites it.
+__git_prompt_info ()
 {
-  local branch
+  local out branch rc=0
 
-  if git rev-parse --git-dir >/dev/null 2>&1; then
-    gitver=$(git symbolic-ref --short -q HEAD)
+  __git_prompt_branch=""
+  __git_prompt_color=$c_green
 
-    if [[ -z "$gitver" ]]; then
-      branch=$(__git_branch_at_head)
-      gitver="${branch:-$(git rev-parse --short HEAD 2>/dev/null)} (detached)"
-    fi
+  if out=$(git status --porcelain=v2 --branch --untracked-files=no --no-ahead-behind 2>&1); then
+    branch=${out#*'# branch.head '}
+    branch=${branch%%$'\n'*}
+    # Entries are "1 XY ..." / "2 XY ..." (Y is the unstaged state, '.' when
+    # none) or "u ..." for conflicts; staged-only changes stay green.
+    [[ $'\n'$out == *$'\n'[12]' '?[!.]* || $'\n'$out == *$'\n''u '* ]] && __git_prompt_color=$c_red
+    [[ "$branch" == "(detached)" ]] && rc=1
   else
-    return 0
+    [[ "$out" == *"not a git repository"* ]] && return 0
+    # No work tree (inside .git, or a bare repo), so status can't report
+    # changes. Exit status 0 means on a branch, 1 a detached HEAD.
+    branch=$(git symbolic-ref --short -q HEAD 2>/dev/null)
+    rc=$?
+    [[ $rc -gt 1 ]] && return 0
+    __git_prompt_color=$c_red
   fi
 
-  echo -e "$gitver"
-}
-
-branch_color ()
-{
-  if git rev-parse --git-dir >/dev/null 2>&1; then
-    if git diff --quiet 2>/dev/null >&2; then
-      printf '%s' "${c_green}"
-    else
-      printf '%s' "${c_red}"
-    fi
+  if [[ $rc -eq 1 ]]; then
+    branch=$(__git_branch_at_head)
+    branch="${branch:-$(git rev-parse --short HEAD 2>/dev/null)} (detached)"
   fi
+
+  __git_prompt_branch=$branch
 }
 
 # ------------------------------- static mode -------------------------------
@@ -90,12 +102,9 @@ branch_color ()
 
 git_prompt_segment ()
 {
-  local branch
-  branch=$(parse_git_branch)
-  if [[ -n "$branch" ]]; then
-    local color
-    color=$(branch_color)
-    printf '[%s%s%s%s%s%s] ' "$np_start" "$color" "$np_end" "$branch" "$np_start" "${c_default}${np_end}"
+  __git_prompt_info
+  if [[ -n "$__git_prompt_branch" ]]; then
+    printf '[%s%s%s%s%s%s] ' "$np_start" "$__git_prompt_color" "$np_end" "$__git_prompt_branch" "$np_start" "${c_default}${np_end}"
   fi
 }
 
@@ -109,10 +118,10 @@ show_host_if_remote ()
 
 show_colored_user ()
 {
-  if [[ "$(whoami)" = "root" ]]; then
-    echo -ne '\[${c_red}\]$(whoami)\[${c_white}\]'
+  if [[ "$__prompt_user" = "root" ]]; then
+    echo -ne '\[${c_red}\]${__prompt_user}\[${c_white}\]'
   else
-    echo -ne '\[${c_white}\]$(whoami)'
+    echo -ne '\[${c_white}\]${__prompt_user}'
   fi
 }
 
@@ -121,6 +130,9 @@ show_path ()
   echo -ne '\[${c_cyan}\]\w'
 }
 
+# Looked up once rather than forking whoami on every prompt; used by both modes.
+__prompt_user=$(whoami)
+
 # The static template, assembled once (the double-quoted helpers bake their
 # template text in at assignment time, exactly as the original PS1 did).
 __static_ps1='$(git_prompt_segment)'"$(show_colored_user)"'@$(show_host_if_remote)'"$(show_path)"'\[${c_default}\]: '
@@ -128,7 +140,6 @@ __static_ps1='$(git_prompt_segment)'"$(show_colored_user)"'@$(show_host_if_remot
 # ------------------------------ dynamic mode -------------------------------
 # Cache the pieces that never change within a session so we don't shell out for
 # them on every prompt.
-__prompt_user=$(whoami)
 if [[ "$__prompt_user" == "root" ]]; then
   __prompt_user_color=$c_red
 else
@@ -200,10 +211,11 @@ __build_prompt ()
 
   # --- gather dynamic segments ---
   local branch bcolor branch_present=0 branchw=0
-  branch=$(parse_git_branch)
+  __git_prompt_info
+  branch=$__git_prompt_branch
   if [[ -n "$branch" ]]; then
     branch_present=1
-    bcolor=$(branch_color)
+    bcolor=$__git_prompt_color
     branchw=${#branch}
   fi
 

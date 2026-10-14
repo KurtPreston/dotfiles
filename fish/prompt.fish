@@ -45,55 +45,48 @@ function __git_branch_at_head
     end
 end
 
-# Parse git branch with timeout and error handling
-function parse_git_branch
-    __git_prompt_run rev-parse --git-dir >/dev/null 2>&1
-    or return 0
+# Branch name plus green/red for clean/dirty, where dirty means unstaged or
+# conflicted changes to tracked files. Each git call costs a full process
+# start, so a single `git status` supplies both.
+# status must keep its default optional locking (no GIT_OPTIONAL_LOCKS=0): that
+# is what lets it write the refreshed index back, so after a pull or build
+# touches many files only one prompt pays to re-check them. `git diff` can't
+# repair files written in the same second as the index, and re-reads them on
+# every prompt until something else rewrites it.
+function git_prompt
+    set -l color $__fish_prompt_colors_green
+    set -l branch
+    set -l rc 0
+    set -l out (__git_prompt_run status --porcelain=v2 --branch --untracked-files=no --no-ahead-behind 2>&1)
 
-    set -l gitver (__git_prompt_run symbolic-ref --short -q HEAD 2>/dev/null)
+    if test $status -eq 0
+        set branch (string replace -rf '^# branch\.head ' '' -- $out)
+        # Entries are "1 XY ..." / "2 XY ..." (Y is the unstaged state, '.'
+        # when none) or "u ..." for conflicts; staged-only changes stay green.
+        if string match -qr '^([12] .[^.]|u )' -- $out
+            set color $__fish_prompt_colors_red
+        end
+        test "$branch" = "(detached)"; and set rc 1
+    else
+        string match -q '*not a git repository*' -- $out; and return 0
+        # No work tree (inside .git, or a bare repo) or timeout gave up, so
+        # status can't report changes. Exit status 0 means on a branch, 1 a
+        # detached HEAD.
+        set branch (__git_prompt_run symbolic-ref --short -q HEAD 2>/dev/null)
+        set rc $status
+        test $rc -gt 1; and return 0
+        set color $__fish_prompt_colors_red
+    end
 
-    if test -z "$gitver"
-        set -l branch (__git_branch_at_head)
+    if test $rc -eq 1
+        set branch (__git_branch_at_head)
         if test -z "$branch"
             set branch (__git_prompt_run rev-parse --short HEAD 2>/dev/null)
         end
-        set gitver "$branch (detached)"
+        set branch "$branch (detached)"
     end
 
-    echo "$gitver"
-end
-
-# Get branch color based on git status with timeout
-function branch_color
-    if command -v timeout >/dev/null
-        timeout 1s git rev-parse --git-dir >/dev/null 2>&1
-        if test $status -eq 0
-            timeout 1s git diff --quiet 2>/dev/null >&2
-            if test $status -eq 0
-                echo -n $__fish_prompt_colors_green
-            else
-                echo -n $__fish_prompt_colors_red
-            end
-        end
-    else
-        # Fallback without timeout
-        if git rev-parse --git-dir >/dev/null 2>&1
-            if git diff --quiet 2>/dev/null >&2
-                echo -n $__fish_prompt_colors_green
-            else
-                echo -n $__fish_prompt_colors_red
-            end
-        end
-    end
-end
-
-# Git prompt component with error handling
-function git_prompt
-    set -l branch (parse_git_branch)
-    if test -n "$branch"
-        set -l color (branch_color)
-        echo -n "[$color$branch$__fish_prompt_colors_default] "
-    end
+    echo -n "[$color$branch$__fish_prompt_colors_default] "
 end
 
 # Show hostname if remote connection
@@ -103,13 +96,13 @@ function show_host_if_remote
     end
 end
 
-# Show colored username
+# Show colored username. Looked up once rather than forking whoami per prompt.
+set -g __fish_prompt_user (whoami)
 function show_colored_user
-    set -l current_user (whoami)
-    if test "$current_user" = "root"
-        echo -n "$__fish_prompt_colors_red$current_user$__fish_prompt_colors_white"
+    if test "$__fish_prompt_user" = "root"
+        echo -n "$__fish_prompt_colors_red$__fish_prompt_user$__fish_prompt_colors_white"
     else
-        echo -n "$__fish_prompt_colors_white$current_user"
+        echo -n "$__fish_prompt_colors_white$__fish_prompt_user"
     end
 end
 
@@ -123,11 +116,7 @@ end
 
 # Set the fish prompt with error handling
 function fish_prompt
-    # Use status command to check if we're in a git repo to avoid unnecessary calls
-    set -l git_prompt_output ""
-    if test -d .git; or git rev-parse --git-dir >/dev/null 2>&1
-        set git_prompt_output (git_prompt)
-    end
+    set -l git_prompt_output (git_prompt)
     
     set -l user_output (show_colored_user)
     set -l host_output (show_host_if_remote)
