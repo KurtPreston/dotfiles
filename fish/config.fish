@@ -33,6 +33,11 @@ if test -s ~/.nvm/nvm.sh
     end
 end
 
+# Load mise and enable directory-based tool version switching
+if status is-interactive; and type -q mise
+    mise activate fish | source
+end
+
 # Auto-switch node version on cd (uses fisher nvm plugin)
 source ~/.dotfiles/fish/nvm.fish
 

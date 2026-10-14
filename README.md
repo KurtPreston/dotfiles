@@ -127,7 +127,7 @@ Any config you don't want stored in the repo, such as environment variables or l
 ## PATH order
 
 `shared/env` sets up PATH first; the other `shared/*` files then add their own
-directories (nvm, rbenv, rvm), and `~/.localrc` runs after them. The agentbox
+directories and hooks (mise, nvm, rbenv, rvm), and `~/.localrc` runs after them. The agentbox
 shims (`shared/agentbox`) are added last, so they stay ahead of every version
 manager: in a Linux-only agentbox workspace, `node` and `npm` run in that
 workspace's VM, and everywhere else they hand off to the real commands.

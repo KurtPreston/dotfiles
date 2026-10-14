@@ -1,0 +1,14 @@
+# Load mise and enable directory-based tool version switching
+# This file is sourced by bash and zsh
+
+if command -v mise >/dev/null 2>&1; then
+    case $- in
+        *i*)
+            if [ -n "$ZSH_VERSION" ]; then
+                eval "$(mise activate zsh)"
+            elif [ -n "$BASH_VERSION" ]; then
+                eval "$(mise activate bash)"
+            fi
+            ;;
+    esac
+fi
