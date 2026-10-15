@@ -36,5 +36,5 @@ end
 # Register completion for gulp command
 complete -c gulp -f -a "(__gulp_complete)" -d "Gulp task"
 
-# Clean old cache files when this script is sourced (runs once per shell session)
+# Clean old cache files when this file loads (gulp's first Tab in this shell)
 __clean_gulp_cache

@@ -12,3 +12,12 @@ complete -c tmux -f -n __fish_use_subcommand -a "attach-session attach detach-cl
 # Session-name completion for the target/source session options
 complete -c tmux -x -s t -a "(__tmux_sessions)" -d "Target session"
 complete -c tmux -x -s s -a "(__tmux_sessions)" -d "Source session"
+
+# Being first in $fish_complete_path, this file hides fish's own tmux
+# completions, so load the next tmux.fish too (or fish 4's built-in copy)
+set -l __tmux_builtin (path filter -f $fish_complete_path/tmux.fish)[2]
+if test -n "$__tmux_builtin"
+    source $__tmux_builtin
+else
+    status get-file completions/tmux.fish 2>/dev/null | source
+end

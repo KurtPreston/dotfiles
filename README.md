@@ -67,13 +67,24 @@ zsh, and fish): the first argument completes tmux subcommands and their short
 aliases (e.g. `attach`, `lsw`, `killp`), and arguments after `-t`/`-s` complete
 the names of running tmux sessions.
 
-### CLI completions
+### Tab completion
 
-Tab completion for `docker` and `kubectl` is loaded in all three shells when
-they're installed, from each CLI's own `<cmd> completion <shell>` output (see
-`tabcomplete_cli`). Docker Desktop's per-user CLI directory, `~/.docker/bin`, is
-added to the end of PATH when present, so its own shell-config snippets aren't
-needed.
+Completions live in a `completions/` directory per shell, one file per command,
+and each loads only on that command's first Tab, so they add nothing to shell
+startup:
+
+| Shell | File | Loaded by |
+|-------|------|-----------|
+| bash | `bash/completions/<command>` | a stub in `bash/bashrc` that sources the file, then hands off to it |
+| zsh | `zsh/completions/_<command>` (a `#compdef` function) | zsh's `compinit`, from `fpath` |
+| fish | `fish/completions/<command>.fish` | fish, from `fish_complete_path` |
+
+Tab completion for `docker` and `kubectl` comes from each CLI's own
+`<cmd> completion <shell>` output (fish ships this already). Docker Desktop's
+per-user CLI directory, `~/.docker/bin`, is added to the end of PATH when
+present, so its own shell-config snippets aren't needed.
+
+To add a completion, add a file for the command in all three directories.
 
 ### Aliases
 
@@ -115,7 +126,7 @@ repo: [grove](https://github.com/KurtPreston/grove) (command `grove`).
 These dotfiles automatically source grove's shell integration when it is installed
 at `$CODE_HOME/grove` (see [`shared/functions`](shared/functions) and
 [`fish/functions.fish`](fish/functions.fish)), load branch-name tab completion from
-the same checkout via `tabcomplete_grove`, and the tmux window colors in
+the same checkout via each shell's `completions/` grove file, and the tmux window colors in
 [`tmux/tmux.conf`](tmux/tmux.conf) read the `@grove_bg`/`@grove_fg` options grove's
 `tmux` recipe sets. Install grove from its repo to get the `grove` command.
 
@@ -127,11 +138,14 @@ dotfiles/
 ├── bin/                # Executable scripts
 ├── bash/               # Bash-specific configuration
 │   ├── bashrc         # Non-login shell configuration
-│   └── bash_profile   # Login shell configuration
+│   ├── bash_profile   # Login shell configuration
+│   └── completions/   # Tab completion, loaded on first Tab
 ├── zsh/                # Zsh-specific configuration
-│   └── zshrc          # Zsh configuration
+│   ├── zshrc          # Zsh configuration
+│   └── completions/   # Tab completion, loaded on first Tab
 ├── fish/               # Fish-specific configuration
-│   └── config.fish    # Fish configuration
+│   ├── config.fish    # Fish configuration
+│   └── completions/   # Tab completion, loaded on first Tab
 └── shared/             # Shared configuration
     └── aliases         # Cross-shell aliases
 ```

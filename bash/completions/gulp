@@ -34,5 +34,5 @@ _clean_gulp_cache() {
 # Register completion for gulp command
 complete -F _gulp_completion gulp
 
-# Clean old cache files when this script is sourced (runs once per shell session)
+# Clean old cache files when this file loads (gulp's first Tab in this shell)
 _clean_gulp_cache

@@ -17,7 +17,7 @@ for file in ~/.dotfiles/shared/*; do
     fi
 done
 
-# Source local configuration if it exists (before tab completion to allow CODE_HOME override)
+# Source local configuration if it exists
 if [[ -f ~/.localrc ]]; then
     source ~/.localrc
 fi
@@ -25,14 +25,11 @@ fi
 # Put the agentbox shims first on PATH, after every version manager above
 source ~/.dotfiles/shared/agentbox
 
-# Initialize completion system (required for compdef to work, especially in older zsh versions)
+# Initialize completion. Each zsh/completions/_<command> file is a #compdef
+# function that compinit autoloads on the command's first Tab.
+fpath=(~/.dotfiles/zsh/completions $fpath)
 autoload -Uz compinit
 compinit
-
-# Source tab completion functions (after local config to use any CODE_HOME override)
-for file in ~/.dotfiles/zsh/tabcomplete*; do
-    source "$file"
-done
 
 # Source keybindings
 source ~/.dotfiles/zsh/keybindings

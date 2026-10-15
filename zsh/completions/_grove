@@ -1,0 +1,14 @@
+#compdef grove
+# Zsh tab completion for grove, from grove's checkout or install directory
+
+# grove's script redefines _grove; call it only if one was found
+local stub="$functions[_grove]" file
+for file in \
+  "${CODE_HOME:-$HOME/Code}/grove/shell/grove-completion.zsh" \
+  "${XDG_DATA_HOME:-$HOME/.local/share}/grove/grove-completion.zsh"; do
+  if [[ -f "$file" ]]; then
+    source "$file"
+    break
+  fi
+done
+[[ "$functions[_grove]" != "$stub" ]] && _grove "$@"

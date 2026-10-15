@@ -17,7 +17,7 @@ for file in ~/.dotfiles/shared/*; do
     fi
 done
 
-# Source local configuration if it exists (before tab completion to allow CODE_HOME override)
+# Source local configuration if it exists
 if [[ -f ~/.localrc ]]; then
     source ~/.localrc
 fi
@@ -25,12 +25,38 @@ fi
 # Put the agentbox shims first on PATH, after every version manager above
 source ~/.dotfiles/shared/agentbox
 
-# Source tab completion functions (after local config to use any env var overrides)
-for file in ~/.dotfiles/bash/tabcomplete*; do
-    if [[ "$file" != ~/.dotfiles/shared/env ]]; then
-        source "$file"
+# Tab completion: each file in bash/completions is named for the command it
+# completes and is only sourced on that command's first Tab, keeping startup fast
+_dotfiles_complete_lazy() {
+    local cmd="${1##*/}"
+    complete -r "$cmd" 2>/dev/null
+    source ~/.dotfiles/bash/completions/"$cmd" || return
+    # Have bash restart completion with the compspec the file just registered
+    if (( BASH_VERSINFO[0] >= 4 )); then
+        return 124
     fi
+    # bash 3.2 can't restart completion, so call the new function directly
+    local spec
+    spec="$(complete -p "$cmd" 2>/dev/null)" || return
+    if [[ "$spec" =~ -F\ ([^ ]+) ]]; then
+        "${BASH_REMATCH[1]}" "$@"
+    fi
+}
+for file in ~/.dotfiles/bash/completions/*; do
+    complete -F _dotfiles_complete_lazy "${file##*/}"
 done
+
+# Minimal stand-in for the bash-completion package's _get_comp_words_by_ref,
+# which docker's and kubectl's generated completions call. Unlike the real one
+# it ignores -n, so words still split at = and :.
+if ! declare -F _get_comp_words_by_ref >/dev/null; then
+    _get_comp_words_by_ref() {
+        cur="${COMP_WORDS[COMP_CWORD]}"
+        prev="${COMP_WORDS[COMP_CWORD-1]}"
+        words=("${COMP_WORDS[@]}")
+        cword=$COMP_CWORD
+    }
+fi
 
 # Source keybindings
 source ~/.dotfiles/bash/keybindings

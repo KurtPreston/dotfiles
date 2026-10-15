@@ -67,15 +67,13 @@ if test -s ~/.cargo/env.fish
     source ~/.cargo/env.fish
 end
 
-# Source local configuration if it exists (before tab completion to allow CODE_HOME override)
+# Source local configuration if it exists
 if test -f ~/.localrc
     source ~/.localrc
 end
 
-# Source tab completion functions (after local config to use any CODE_HOME override)
-for file in ~/.dotfiles/fish/tabcomplete*
-    source $file
-end
+# Tab completion: fish autoloads fish/completions/<command>.fish on the command's first Tab
+set -g fish_complete_path ~/.dotfiles/fish/completions $fish_complete_path
 
 # Source fzf integration (no-op if fzf not installed)
 source ~/.dotfiles/fish/fzf.fish

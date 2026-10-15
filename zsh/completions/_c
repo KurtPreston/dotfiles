@@ -1,0 +1,7 @@
+#compdef c
+# Zsh tab completion for 'c': directories (including nested paths) in CODE_HOME
+
+local code_home="${CODE_HOME:-$HOME/Code}"
+if [[ -d "$code_home" ]]; then
+    _path_files -W "$code_home" -/
+fi

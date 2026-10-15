@@ -1,0 +1,33 @@
+#compdef gulp
+# Zsh tab completion for gulp tasks, cached from `gulp -T` by bin/gulp-get-tasks
+
+_gulp() {
+    local -a tasks
+    local context state line
+
+    _arguments -C \
+        '1: :->tasks' \
+        '*: :->args'
+
+    case $state in
+        tasks)
+            local task_list
+            task_list=$("$HOME/.dotfiles/bin/gulp-get-tasks")
+
+            if [[ -n "$task_list" ]]; then
+                # Convert newline-separated tasks to array
+                tasks=(${(f)task_list})
+                _describe 'gulp tasks' tasks
+            fi
+            ;;
+        args)
+            # For additional arguments, provide file completion as fallback
+            _files
+            ;;
+    esac
+}
+
+# Clean old cache files when this file loads (gulp's first Tab in this shell)
+"$HOME/.dotfiles/bin/gulp-clean-cache"
+
+_gulp "$@"
