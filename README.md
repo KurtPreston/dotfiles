@@ -37,6 +37,14 @@ sessions are never merged back into the current session's in-memory history.
 Configured in `bash/history` and `zsh/history`. (Fish already shares history
 across terminals natively.)
 
+### direnv
+
+If [direnv](https://direnv.net) is installed, its hook is loaded in bash, zsh,
+and fish, so a directory's `.envrc` is loaded on `cd` in and unloaded on `cd`
+out (run `direnv allow` once per `.envrc`). As direnv requires, the hook is
+loaded last in each shell's config (`shared/direnv` for bash and zsh, the end of
+`fish/config.fish` for fish).
+
 ### tmux
 
 A minimal `tmux.conf` (symlinked to `~/.tmux.conf`) with sensible ergonomics.
@@ -130,7 +138,9 @@ Any config you don't want stored in the repo, such as environment variables or l
 directories and hooks (mise, nvm, rbenv, rvm), and `~/.localrc` runs after them. The agentbox
 shims (`shared/agentbox`) are added last, so they stay ahead of every version
 manager: in a Linux-only agentbox workspace, `node` and `npm` run in that
-workspace's VM, and everywhere else they hand off to the real commands.
+workspace's VM, and everywhere else they hand off to the real commands. The
+direnv hook (`shared/direnv`) loads after that, so an `.envrc`'s `PATH_add`
+entries take precedence inside that directory.
 
 ## Adding Aliases
 

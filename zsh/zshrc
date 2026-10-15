@@ -12,7 +12,7 @@ source ~/.dotfiles/shared/env
 
 # Source other shared files
 for file in ~/.dotfiles/shared/*; do
-    if [[ "$file" != ~/.dotfiles/shared/env && "$file" != ~/.dotfiles/shared/agentbox ]]; then
+    if [[ "$file" != ~/.dotfiles/shared/env && "$file" != ~/.dotfiles/shared/agentbox && "$file" != ~/.dotfiles/shared/direnv ]]; then
         source "$file"
     fi
 done
@@ -40,4 +40,7 @@ source ~/.dotfiles/zsh/keybindings
 # Source history configuration (after fzf/keybindings so the Ctrl+R override wins)
 source ~/.dotfiles/zsh/history
 
-# Zsh-specific configuration can be added here 
+# Zsh-specific configuration can be added here
+
+# Load the direnv hook last, after everything that touches the prompt
+source ~/.dotfiles/shared/direnv

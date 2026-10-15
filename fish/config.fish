@@ -87,3 +87,8 @@ if test -d ~/.local/share/agentbox/shims
 end
 
 # Fish-specific configuration can be added here
+
+# Load the direnv hook last, so .envrc files load and unload on cd (https://direnv.net/docs/hook.html)
+if status is-interactive; and type -q direnv
+    direnv hook fish | source
+end

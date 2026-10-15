@@ -1,0 +1,16 @@
+# Load direnv so a directory's .envrc is loaded and unloaded on cd
+# (https://direnv.net/docs/hook.html). Sourced last by bash and zsh, after the
+# prompt, history, and every other PROMPT_COMMAND/precmd hook, as direnv
+# requires. A no-op on machines without direnv.
+
+if command -v direnv >/dev/null 2>&1; then
+    case $- in
+        *i*)
+            if [ -n "$ZSH_VERSION" ]; then
+                eval "$(direnv hook zsh)"
+            elif [ -n "$BASH_VERSION" ]; then
+                eval "$(direnv hook bash)"
+            fi
+            ;;
+    esac
+fi

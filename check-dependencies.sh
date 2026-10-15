@@ -19,6 +19,7 @@ DEPS=(
     "delta:Syntax-highlighting pager for git diffs"
     "jq:JSON processor (node version auto-switch)"
     "tmux:Terminal multiplexer"
+    "direnv:Per-directory environment variables (.envrc)"
 )
 
 # Detect the operating system / package manager hint.
