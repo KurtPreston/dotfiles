@@ -92,7 +92,10 @@ end
 # Show hostname if remote connection
 function show_host_if_remote
     if test -n "$SSH_CONNECTION"
-        echo -n "$__fish_prompt_colors_blue"(hostname)"$__fish_prompt_colors_default"
+        # PROMPT_HOST overrides the hostname
+        set -l host $PROMPT_HOST
+        test -n "$host"; or set host (hostname)
+        echo -n "$__fish_prompt_colors_blue$host$__fish_prompt_colors_default"
     end
 end
 

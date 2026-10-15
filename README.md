@@ -154,6 +154,9 @@ dotfiles/
 
 Any config you don't want stored in the repo, such as environment variables or local aliases can be put in a file `~/.localrc`.
 
+Over SSH the prompt shows the hostname. To show a shorter name instead, set
+`PROMPT_HOST` in `~/.localrc` on that server, e.g. `export PROMPT_HOST=web1`.
+
 ## PATH order
 
 `shared/env` sets up PATH first; the other `shared/*` files then add their own

@@ -61,7 +61,9 @@ git_prompt() {
 
 show_host_if_remote() {
   if [[ ! -z "$SSH_CONNECTION" ]]; then
-    echo "%F{blue}$(hostname)%f"
+    # PROMPT_HOST overrides the hostname; escape % so it can't inject prompt sequences
+    local host="${PROMPT_HOST:-$(hostname)}"
+    echo "%F{blue}${host//\%/%%}%f"
   fi
 }
 

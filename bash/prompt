@@ -111,7 +111,7 @@ git_prompt_segment ()
 show_host_if_remote ()
 {
   if [[ -n "$SSH_CONNECTION" ]]; then
-    printf '%s%s%s%s' "$np_start" "${c_blue}" "$np_end" "$(hostname)"
+    printf '%s%s%s%s' "$np_start" "${c_blue}" "$np_end" "${PROMPT_HOST:-$(hostname)}"
     printf '%s%s%s' "$np_start" "${c_default}" "$np_end"
   fi
 }
@@ -221,7 +221,7 @@ __build_prompt ()
 
   local host=""
   if [[ -n "$SSH_CONNECTION" ]]; then
-    host=$__prompt_host
+    host=${PROMPT_HOST:-$__prompt_host}
   fi
 
   # cwd, rendered \w-style (collapse $HOME to ~).
