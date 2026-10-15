@@ -1,0 +1,9 @@
+# Bash tab completion for CLIs that generate their own (`<cmd> completion bash`)
+# Docker Desktop installs docker and kubectl in ~/.docker/bin (see shared/env)
+
+for _cli in docker kubectl; do
+    if command -v "$_cli" >/dev/null 2>&1; then
+        eval "$("$_cli" completion bash 2>/dev/null)"
+    fi
+done
+unset _cli

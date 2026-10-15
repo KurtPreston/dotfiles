@@ -12,6 +12,11 @@ else
     end
 end
 
+# Docker Desktop's per-user CLI install (mirrors shared/env, without needing bass)
+if test -d ~/.docker/bin
+    fish_add_path --global --append --path ~/.docker/bin
+end
+
 # Source shared aliases
 source ~/.dotfiles/shared/aliases
 

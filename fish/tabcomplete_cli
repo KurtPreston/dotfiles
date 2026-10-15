@@ -1,0 +1,8 @@
+# Fish tab completion for CLIs that generate their own (`<cmd> completion fish`)
+# Docker Desktop installs docker and kubectl in ~/.docker/bin (see shared/env)
+
+for cli in docker kubectl
+    if type -q $cli
+        $cli completion fish 2>/dev/null | source
+    end
+end

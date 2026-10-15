@@ -25,5 +25,14 @@ if [ -n "$_go_bin" ] && [ -d "$_go_bin/bin" ]; then
 fi
 unset _go_bin
 
+# Docker Desktop's per-user CLI install (docker, kubectl, ...). Appended, as
+# Docker Desktop's own snippet does, and skipped if that snippet already ran.
+if [ -d "$HOME/.docker/bin" ]; then
+  case ":$PATH:" in
+    *":$HOME/.docker/bin:"*) ;;
+    *) PATH="$PATH:$HOME/.docker/bin" ;;
+  esac
+fi
+
 # Add any other environment variables here
 # export EXAMPLE_VAR="${EXAMPLE_VAR:-default_value}" 

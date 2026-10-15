@@ -67,6 +67,14 @@ zsh, and fish): the first argument completes tmux subcommands and their short
 aliases (e.g. `attach`, `lsw`, `killp`), and arguments after `-t`/`-s` complete
 the names of running tmux sessions.
 
+### CLI completions
+
+Tab completion for `docker` and `kubectl` is loaded in all three shells when
+they're installed, from each CLI's own `<cmd> completion <shell>` output (see
+`tabcomplete_cli`). Docker Desktop's per-user CLI directory, `~/.docker/bin`, is
+added to the end of PATH when present, so its own shell-config snippets aren't
+needed.
+
 ### Aliases
 
 | Alias | Command | Description |
