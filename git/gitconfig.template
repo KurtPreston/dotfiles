@@ -40,6 +40,8 @@
   navigate = true
   line-numbers = true
   side-by-side = false
+[init]
+	defaultBranch = main
 [pull]
 	rebase = false
 # Safe maintenance defaults. Prefer `git maintenance run` over manual
