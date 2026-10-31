@@ -45,6 +45,27 @@ function __git_branch_at_head
     end
 end
 
+# In a grove project (an ancestor holding a bare .base repo, beside one
+# worktree per branch) outside any worktree, prints "grove×N", N being the
+# worktree count. Fails when not in a grove project.
+function __grove_prompt_label
+    set -l dir $PWD
+
+    # Walk up to the directory holding .base, as grove itself does
+    while test -n "$dir"; and not test -d "$dir/.base"
+        set dir (string replace -r '/[^/]*$' '' -- $dir)
+    end
+    test -n "$dir"; or return 1
+
+    # A glob with no matches expands to an empty list inside set
+    set -l worktrees $dir/.base/worktrees/*/
+    if test (count $worktrees) -gt 0
+        echo "grove×"(count $worktrees)
+    else
+        echo grove
+    end
+end
+
 # Branch name plus green/red for clean/dirty, where dirty means unstaged or
 # conflicted changes to tracked files. Each git call costs a full process
 # start, so a single `git status` supplies both.
@@ -68,7 +89,11 @@ function git_prompt
         end
         test "$branch" = "(detached)"; and set rc 1
     else
-        string match -q '*not a git repository*' -- $out; and return 0
+        if string match -q '*not a git repository*' -- $out
+            set -l label (__grove_prompt_label)
+            and echo -n "[$__fish_prompt_colors_yellow$label$__fish_prompt_colors_default] "
+            return 0
+        end
         # No work tree (inside .git, or a bare repo) or timeout gave up, so
         # status can't report changes. Exit status 0 means on a branch, 1 a
         # detached HEAD.

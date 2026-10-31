@@ -28,6 +28,10 @@ The script will:
 
 Simple terminal prompt showing git branch, user, and dir.
 
+In a [grove](https://github.com/KurtPreston/grove) project's root, outside any
+worktree, the branch slot shows `[grove×N]`, where N is the number of
+worktrees.
+
 ### Shared history
 
 Commands are written to a single shared history file the moment they run, so

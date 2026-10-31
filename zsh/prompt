@@ -22,6 +22,26 @@ __git_branch_at_head() {
   printf '%s' "${branch:-$(printf '%s\n' "$remotes" | head -n1)}"
 }
 
+# In a grove project (an ancestor holding a bare .base repo, beside one
+# worktree per branch) outside any worktree, prints "grove×N", N being the
+# worktree count. Fails when not in a grove project.
+__grove_prompt_label() {
+  local dir=$PWD
+  local -a worktrees
+
+  # Walk up to the directory holding .base, as grove itself does
+  while [[ -n "$dir" && ! -d "$dir/.base" ]]; do
+    dir=${dir%/*}
+  done
+  [[ -n "$dir" ]] || return 1
+
+  # (N/) matches directories only and expands to nothing when there are none
+  worktrees=("$dir"/.base/worktrees/*(N/))
+  printf 'grove'
+  (( ${#worktrees} )) && printf '×%d' ${#worktrees}
+  return 0
+}
+
 # Branch name plus green/red for clean/dirty, where dirty means unstaged or
 # conflicted changes to tracked files. Each git call costs a full process
 # start, so a single `git status` supplies both.
@@ -41,7 +61,10 @@ git_prompt() {
     [[ $'\n'$out == *$'\n'[12]' '?[^.]* || $'\n'$out == *$'\n''u '* ]] && color="%F{red}"
     [[ "$branch" == "(detached)" ]] && rc=1
   else
-    [[ "$out" == *"not a git repository"* ]] && return 0
+    if [[ "$out" == *"not a git repository"* ]]; then
+      branch=$(__grove_prompt_label) && echo "[%F{yellow}$branch%f] "
+      return 0
+    fi
     # No work tree (inside .git, or a bare repo), so status can't report
     # changes. Exit status 0 means on a branch, 1 a detached HEAD.
     branch=$(git symbolic-ref --short -q HEAD 2>/dev/null)
