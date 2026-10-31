@@ -65,7 +65,7 @@ total=${#branches[@]}
 echo "Examining ${total} remote branch(es) for merged/squashed work..."
 
 i=0
-for branch in "${branches[@]}"; do
+for branch in ${branches[@]+"${branches[@]}"}; do
   i=$((i + 1))
   progress "$i" "$total" "$branch"
   is_protected "$branch" && continue
