@@ -171,11 +171,8 @@ Over SSH the prompt shows the hostname. To show a shorter name instead, set
 ## PATH order
 
 `shared/env` sets up PATH first; the other `shared/*` files then add their own
-directories and hooks (mise, nvm, rbenv, rvm), and `~/.localrc` runs after them. The agentbox
-shims (`shared/agentbox`) are added last, so they stay ahead of every version
-manager: in a Linux-only agentbox workspace, `node` and `npm` run in that
-workspace's VM, and everywhere else they hand off to the real commands. The
-direnv hook (`shared/direnv`) loads after that, so an `.envrc`'s `PATH_add`
+directories and hooks (mise, nvm, rbenv, rvm), and `~/.localrc` runs after them. The
+direnv hook (`shared/direnv`) loads last, so an `.envrc`'s `PATH_add`
 entries take precedence inside that directory.
 
 ## Adding Aliases
