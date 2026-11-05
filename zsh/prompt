@@ -42,45 +42,123 @@ __grove_prompt_label() {
   return 0
 }
 
-# Branch name plus green/red for clean/dirty, where dirty means unstaged or
-# conflicted changes to tracked files. Each git call costs a full process
-# start, so a single `git status` supplies both.
-# status must keep its default optional locking (no GIT_OPTIONAL_LOCKS=0): that
-# is what lets it write the refreshed index back, so after a pull or build
-# touches many files only one prompt pays to re-check them. `git diff` can't
-# repair files written in the same second as the index, and re-reads them on
-# every prompt until something else rewrites it.
-git_prompt() {
-  local out branch rc=0 color="%F{green}"
+# Branch name, colored green when clean, red when tracked files have unstaged
+# or conflicted changes, and gray while that's unknown. The branch takes two
+# quick git calls, so precmd looks it up on every prompt. `git status` can
+# take seconds in a large repo, so bin/git-prompt-dirty runs it in the
+# background and zle repaints the prompt when it answers. Until then the
+# prompt keeps the last answer for the same work tree, or gray for a new one.
+typeset -gA __git_prompt_state   # work tree root -> dirty, clean, or "" when unknown
+typeset -g __git_prompt_seg="" __git_prompt_branch="" __git_prompt_top="" __git_prompt_grove=""
+typeset -g __git_prompt_fd="" __git_prompt_fd_top="" __git_prompt_rerun=0
 
-  if out=$(git status --porcelain=v2 --branch --untracked-files=no --no-ahead-behind 2>&1); then
-    branch=${out#*'# branch.head '}
-    branch=${branch%%$'\n'*}
-    # Entries are "1 XY ..." / "2 XY ..." (Y is the unstaged state, '.' when
-    # none) or "u ..." for conflicts; staged-only changes stay green.
-    [[ $'\n'$out == *$'\n'[12]' '?[^.]* || $'\n'$out == *$'\n''u '* ]] && color="%F{red}"
-    [[ "$branch" == "(detached)" ]] && rc=1
-  else
-    if [[ "$out" == *"not a git repository"* ]]; then
-      branch=$(__grove_prompt_label) && echo "[%F{yellow}$branch%f] "
-      return 0
-    fi
-    # No work tree (inside .git, or a bare repo), so status can't report
-    # changes. Exit status 0 means on a branch, 1 a detached HEAD.
-    branch=$(git symbolic-ref --short -q HEAD 2>/dev/null)
-    rc=$?
-    (( rc > 1 )) && return 0
-    color="%F{red}"
+# Rebuilds the "[branch] " segment PS1 shows from the branch and known state.
+__git_prompt_render() {
+  local color="%F{8}"
+  # Outside a repository, show the grove label (if any) in yellow.
+  if [[ -z $__git_prompt_branch ]]; then
+    __git_prompt_seg=""
+    [[ -n $__git_prompt_grove ]] && __git_prompt_seg="[%F{yellow}$__git_prompt_grove%f] "
+    return
   fi
 
-  if (( rc == 1 )); then
-    branch=$(__git_branch_at_head)
-    branch="${branch:-$(git rev-parse --short HEAD 2>/dev/null)} (detached)"
+  # No work tree (inside .git, or a bare repo) can't report changes, so red.
+  if [[ -z $__git_prompt_top ]]; then
+    color="%F{red}"
+  else
+    case ${__git_prompt_state[$__git_prompt_top]} in
+      dirty) color="%F{red}" ;;
+      clean) color="%F{green}" ;;
+    esac
   fi
 
   # Escape % so a branch name can't inject prompt sequences.
-  echo "[$color${branch//\%/%%}%f] "
+  __git_prompt_seg="[$color${__git_prompt_branch//\%/%%}%f] "
 }
+
+# Stops watching the running background check, if any.
+__git_prompt_async_stop() {
+  [[ -z $__git_prompt_fd ]] && return
+  zle -F $__git_prompt_fd 2>/dev/null
+  exec {__git_prompt_fd}<&-
+  __git_prompt_fd=""
+}
+
+# Starts a background dirty check for work tree $1. If one is already running
+# there, it reruns once finished instead, since the command just run may have
+# changed files after it started.
+__git_prompt_async_start() {
+  local top=$1 helper="$HOME/.dotfiles/bin/git-prompt-dirty"
+  if [[ -n $__git_prompt_fd && $__git_prompt_fd_top == $top ]]; then
+    __git_prompt_rerun=1
+    return
+  fi
+  __git_prompt_async_stop
+
+  # Without zle nothing can repaint the prompt later, so check in line.
+  if [[ ! -o zle ]]; then
+    __git_prompt_state[$top]=$("$helper" "$top")
+    return
+  fi
+
+  # zle calls __git_prompt_async_done once the helper answers or exits.
+  exec {__git_prompt_fd}< <("$helper" "$top" 2>/dev/null)
+  __git_prompt_fd_top=$top
+  __git_prompt_rerun=0
+  zle -F $__git_prompt_fd __git_prompt_async_done
+}
+
+# Records the background check's answer and repaints the prompt.
+__git_prompt_async_done() {
+  local result top=$__git_prompt_fd_top
+  IFS= read -r result <&$1
+  __git_prompt_async_stop
+  __git_prompt_state[$top]=$result
+
+  # Check again if a prompt asked while this one was running.
+  if (( __git_prompt_rerun )) && [[ $top == $__git_prompt_top ]]; then
+    __git_prompt_async_start $top
+  fi
+  __git_prompt_render
+  zle reset-prompt
+}
+
+# Looks up the branch for this prompt and starts the dirty check.
+__git_prompt_precmd() {
+  local info branch rc
+  __git_prompt_branch="" __git_prompt_top="" __git_prompt_grove=""
+
+  # rev-parse prints "true" and the root in a work tree, "false" inside .git
+  # or a bare repo, and nothing outside a repository.
+  info=$(git rev-parse --is-inside-work-tree --show-toplevel 2>/dev/null)
+  case $info in
+    true$'\n'*) __git_prompt_top=${info#true$'\n'} ;;
+    false*) ;;
+    *)
+      __git_prompt_grove=$(__grove_prompt_label)
+      __git_prompt_render
+      return 0
+      ;;
+  esac
+
+  # Exit status 0 means on a branch, 1 a detached HEAD.
+  branch=$(git symbolic-ref --short -q HEAD 2>/dev/null)
+  rc=$?
+  if (( rc > 1 )); then
+    __git_prompt_render
+    return 0
+  elif (( rc == 1 )); then
+    branch=$(__git_branch_at_head)
+    branch="${branch:-$(git rev-parse --short HEAD 2>/dev/null)} (detached)"
+  fi
+  __git_prompt_branch=$branch
+
+  [[ -n $__git_prompt_top ]] && __git_prompt_async_start $__git_prompt_top
+  __git_prompt_render
+}
+
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd __git_prompt_precmd
 
 show_host_if_remote() {
   if [[ ! -z "$SSH_CONNECTION" ]]; then
@@ -101,4 +179,4 @@ show_path() {
 }
 
 # Set the prompt
-PS1='$(git_prompt)$(show_colored_user)@$(show_host_if_remote)$(show_path): '
+PS1='${__git_prompt_seg}$(show_colored_user)@$(show_host_if_remote)$(show_path): '

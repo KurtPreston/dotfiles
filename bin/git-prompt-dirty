@@ -1,0 +1,24 @@
+#!/bin/sh
+# Prints "dirty" or "clean" for the git work tree at $1 (default: the current
+# directory). Shell prompts run it in the background to color the branch, so
+# a slow status in a large repo never delays the prompt. Dirty means tracked
+# files with unstaged or conflicted changes; staged-only changes are clean.
+# Prints nothing and exits non-zero when status fails.
+#
+# GIT_OPTIONAL_LOCKS=0 stops status from taking index.lock to write back its
+# refreshed index. Running behind the prompt, a held lock would make a git
+# command typed right after fail with "index.lock: File exists". The cost is
+# that files touched in bulk are re-checked until another git command
+# refreshes the index, which happens off the prompt's critical path anyway.
+
+[ -n "$1" ] && { cd -- "$1" || exit 1; }
+
+out=$(GIT_OPTIONAL_LOCKS=0 git status --porcelain=v2 --untracked-files=no --no-ahead-behind 2>/dev/null) || exit 1
+
+# Entries are "1 XY ..." / "2 XY ..." (Y is the unstaged state, '.' when
+# none) or "u ..." for conflicts.
+if printf '%s\n' "$out" | grep -qE '^([12] .[^.]|u )'; then
+  echo dirty
+else
+  echo clean
+fi
