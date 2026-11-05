@@ -28,6 +28,13 @@ The script will:
 
 Simple terminal prompt showing git branch, user, and dir.
 
+The branch is green when clean, red when tracked files have unstaged or
+conflicted changes, and gray while that's still being checked. The check runs
+`git status` in the background (`bin/git-prompt-dirty`), so the prompt appears
+right away even in large repos: zsh and fish recolor it in place when the
+check finishes, while bash waits up to 0.1s and otherwise shows the result at
+the next prompt.
+
 ### Shared history
 
 Commands are written to a single shared history file the moment they run, so
