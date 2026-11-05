@@ -22,6 +22,26 @@ __git_branch_at_head() {
   printf '%s' "${branch:-$(printf '%s\n' "$remotes" | head -n1)}"
 }
 
+# In a grove project (an ancestor holding a bare .base repo, beside one
+# worktree per branch) outside any worktree, prints "grove×N", N being the
+# worktree count. Fails when not in a grove project.
+__grove_prompt_label() {
+  local dir=$PWD
+  local -a worktrees
+
+  # Walk up to the directory holding .base, as grove itself does
+  while [[ -n "$dir" && ! -d "$dir/.base" ]]; do
+    dir=${dir%/*}
+  done
+  [[ -n "$dir" ]] || return 1
+
+  # (N/) matches directories only and expands to nothing when there are none
+  worktrees=("$dir"/.base/worktrees/*(N/))
+  printf 'grove'
+  (( ${#worktrees} )) && printf '×%d' ${#worktrees}
+  return 0
+}
+
 # Branch name, colored green when clean, red when tracked files have unstaged
 # or conflicted changes, and gray while that's unknown. The branch takes two
 # quick git calls, so precmd looks it up on every prompt. `git status` can
@@ -29,14 +49,16 @@ __git_branch_at_head() {
 # background and zle repaints the prompt when it answers. Until then the
 # prompt keeps the last answer for the same work tree, or gray for a new one.
 typeset -gA __git_prompt_state   # work tree root -> dirty, clean, or "" when unknown
-typeset -g __git_prompt_seg="" __git_prompt_branch="" __git_prompt_top=""
+typeset -g __git_prompt_seg="" __git_prompt_branch="" __git_prompt_top="" __git_prompt_grove=""
 typeset -g __git_prompt_fd="" __git_prompt_fd_top="" __git_prompt_rerun=0
 
 # Rebuilds the "[branch] " segment PS1 shows from the branch and known state.
 __git_prompt_render() {
   local color="%F{8}"
+  # Outside a repository, show the grove label (if any) in yellow.
   if [[ -z $__git_prompt_branch ]]; then
     __git_prompt_seg=""
+    [[ -n $__git_prompt_grove ]] && __git_prompt_seg="[%F{yellow}$__git_prompt_grove%f] "
     return
   fi
 
@@ -104,7 +126,7 @@ __git_prompt_async_done() {
 # Looks up the branch for this prompt and starts the dirty check.
 __git_prompt_precmd() {
   local info branch rc
-  __git_prompt_branch="" __git_prompt_top=""
+  __git_prompt_branch="" __git_prompt_top="" __git_prompt_grove=""
 
   # rev-parse prints "true" and the root in a work tree, "false" inside .git
   # or a bare repo, and nothing outside a repository.
@@ -112,7 +134,11 @@ __git_prompt_precmd() {
   case $info in
     true$'\n'*) __git_prompt_top=${info#true$'\n'} ;;
     false*) ;;
-    *) __git_prompt_render; return 0 ;;
+    *)
+      __git_prompt_grove=$(__grove_prompt_label)
+      __git_prompt_render
+      return 0
+      ;;
   esac
 
   # Exit status 0 means on a branch, 1 a detached HEAD.

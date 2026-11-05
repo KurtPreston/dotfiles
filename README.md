@@ -35,6 +35,10 @@ right away even in large repos: zsh and fish recolor it in place when the
 check finishes, while bash waits up to 0.1s and otherwise shows the result at
 the next prompt.
 
+In a [grove](https://github.com/KurtPreston/grove) project's root, outside any
+worktree, the branch slot shows `[grove×N]`, where N is the number of
+worktrees.
+
 ### Shared history
 
 Commands are written to a single shared history file the moment they run, so

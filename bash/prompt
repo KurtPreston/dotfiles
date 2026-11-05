@@ -54,6 +54,32 @@ __git_branch_at_head ()
   printf '%s' "${branch:-$(printf '%s\n' "$remotes" | head -n1)}"
 }
 
+# In a grove project (an ancestor holding a bare .base repo, beside one
+# worktree per branch) outside any worktree, sets __git_prompt_branch to
+# "grove×N", N being the worktree count. Fails when not in a grove project.
+# Uses only tests and globs, so ordinary directories cost no forks.
+__grove_prompt_label ()
+{
+  local dir=$PWD had_nullglob=0
+  local -a worktrees
+
+  # Walk up to the directory holding .base, as grove itself does
+  while [[ -n "$dir" && ! -d "$dir/.base" ]]; do
+    dir=${dir%/*}
+  done
+  [[ -n "$dir" ]] || return 1
+
+  # Count registered worktrees without leaving nullglob changed
+  shopt -q nullglob && had_nullglob=1
+  shopt -s nullglob
+  worktrees=("$dir"/.base/worktrees/*/)
+  (( had_nullglob )) || shopt -u nullglob
+
+  __git_prompt_branch=grove
+  (( ${#worktrees[@]} )) && __git_prompt_branch+="×${#worktrees[@]}"
+  return 0
+}
+
 # Answers whether work tree $1 is dirty by setting __git_prompt_known_top and
 # __git_prompt_known_state (dirty, clean, or empty when unknown).
 # bin/git-prompt-dirty runs `git status` in the background, which can take
@@ -113,7 +139,10 @@ __git_prompt_info ()
   case "$info" in
     true$'\n'*) top=${info#true$'\n'} ;;
     false*) __git_prompt_color=$c_red ;;
-    *) return 0 ;;
+    *)
+      __grove_prompt_label && __git_prompt_color=$c_yellow
+      return 0
+      ;;
   esac
 
   # Exit status 0 means on a branch, 1 a detached HEAD.

@@ -46,6 +46,27 @@ function __git_branch_at_head
     end
 end
 
+# In a grove project (an ancestor holding a bare .base repo, beside one
+# worktree per branch) outside any worktree, prints "grove×N", N being the
+# worktree count. Fails when not in a grove project.
+function __grove_prompt_label
+    set -l dir $PWD
+
+    # Walk up to the directory holding .base, as grove itself does
+    while test -n "$dir"; and not test -d "$dir/.base"
+        set dir (string replace -r '/[^/]*$' '' -- $dir)
+    end
+    test -n "$dir"; or return 1
+
+    # A glob with no matches expands to an empty list inside set
+    set -l worktrees $dir/.base/worktrees/*/
+    if test (count $worktrees) -gt 0
+        echo "grove×"(count $worktrees)
+    else
+        echo grove
+    end
+end
+
 # Branch name, colored green when clean, red when tracked files have unstaged
 # or conflicted changes, and gray while that's unknown. The branch takes two
 # quick git calls, looked up once per prompt by __git_prompt_update.
@@ -54,6 +75,7 @@ end
 # then the prompt keeps the last answer for the same work tree, or gray.
 set -g __git_prompt_branch ""
 set -g __git_prompt_top ""
+set -g __git_prompt_grove ""
 set -g __git_prompt_known_top ""
 set -g __git_prompt_known_state ""
 set -g __git_prompt_pending_top ""
@@ -105,6 +127,7 @@ end
 function __git_prompt_update --on-event fish_prompt
     set -g __git_prompt_branch ""
     set -g __git_prompt_top ""
+    set -g __git_prompt_grove ""
 
     # rev-parse prints "true" and the root in a work tree, "false" inside .git
     # or a bare repo, and nothing outside a repository.
@@ -114,6 +137,7 @@ function __git_prompt_update --on-event fish_prompt
             set -g __git_prompt_top $info[2]
         case false
         case '*'
+            set -g __git_prompt_grove (__grove_prompt_label)
             return 0
     end
 
@@ -136,7 +160,12 @@ end
 # Renders the "[branch] " segment from the state __git_prompt_update and the
 # background check left.
 function git_prompt
-    test -n "$__git_prompt_branch"; or return 0
+    # Outside a repository, show the grove label (if any) in yellow.
+    if test -z "$__git_prompt_branch"
+        test -n "$__git_prompt_grove"
+        and echo -n "[$__fish_prompt_colors_yellow$__git_prompt_grove$__fish_prompt_colors_default] "
+        return 0
+    end
     set -l color $__fish_prompt_colors_gray
 
     # No work tree (inside .git, or a bare repo) can't report changes, so red.
