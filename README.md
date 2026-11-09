@@ -113,9 +113,9 @@ To add a completion, add a file for the command in all three directories.
 | `gl` | `git log --oneline` | Show commit history in one line |
 | `grr` | `git_recursive_reset` | Aggressively reset project and submodules |
 | `gsi` | `git stash-index` | Stashes currently staged code |
-| `gbc` | `git-branch-clean` | Clean local/remote branches merged (incl. squash) into remote default |
-| `gbcl` | `git-branch-clean-local` | Clean local branches merged (incl. squash) into remote default |
-| `gbcr` | `git-branch-clean-remote` | Clean remote branches merged (incl. squash) into remote default |
+| `gbc` | `git-branch-clean` | Clean local/remote branches merged (incl. squash, or via a merged GitHub PR) into remote default |
+| `gbcl` | `git-branch-clean-local` | Clean local branches merged (incl. squash, or via a merged GitHub PR) into remote default |
+| `gbcr` | `git-branch-clean-remote` | Clean remote branches merged (incl. squash, or via a merged GitHub PR) into remote default |
 | `cr` | `cd_git_root` | Change to git repository root |
 | `l` | `ls -al` | List all files with details |
 | `reload` | `source ~/.dotfiles/*/config` | Reload shell configuration |

@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+# Exit 0 if REF's tip is the head of a merged pull request for branch NAME, or
+# an ancestor of it (a stale local copy whose commits all went into the PR).
+# Exit 1 otherwise. A branch name reused for new work after its PR merged has
+# commits beyond that PR's head, so it is kept.
+#
+# Usage: git-branch-pr-merged <ref> <name> <heads-file>
+#   heads-file: output of git-merged-pr-heads
+
+set -euo pipefail
+
+if [[ $# -ne 3 ]]; then
+  echo "Usage: git-branch-pr-merged <ref> <name> <heads-file>" >&2
+  exit 2
+fi
+
+ref="$1"
+name="$2"
+heads_file="$3"
+
+tip="$(git rev-parse --verify --quiet "${ref}^{commit}" || true)"
+[[ -n "$tip" ]] || exit 1
+
+# Check each merged PR that came from this branch name
+while read -r head_name oid number; do
+  [[ "$head_name" == "$name" ]] || continue
+  [[ "$tip" == "$oid" ]] && exit 0
+
+  # Fetch the PR head if we've never seen it; GitHub keeps refs/pull/N/head
+  if ! git cat-file -e "${oid}^{commit}" 2>/dev/null; then
+    git fetch --quiet --no-tags origin "refs/pull/${number}/head" 2>/dev/null || continue
+  fi
+  git merge-base --is-ancestor "$tip" "$oid" 2>/dev/null && exit 0
+done <"$heads_file"
+
+exit 1

@@ -50,6 +50,14 @@ fi
 
 to_delete=()
 
+# Branches stacked on other work, or with the default branch merged in, defeat
+# the content checks once the default branch moves on, so also ask GitHub which
+# branch heads landed through merged pull requests.
+echo "Listing merged pull requests..."
+pr_heads="$(mktemp)"
+trap 'rm -f "$pr_heads"' EXIT
+git-merged-pr-heads >"$pr_heads" || true
+
 branches=()
 while IFS= read -r branch; do
   [[ -z "$branch" || "$branch" == "HEAD" ]] && continue
@@ -74,6 +82,8 @@ for branch in ${branches[@]+"${branches[@]}"}; do
   if git merge-base --is-ancestor "$ref" "$into" 2>/dev/null; then
     to_delete+=("$branch")
   elif [[ "$detect_squash" == 1 ]] && git-branch-squash-merged "$ref" "$into"; then
+    to_delete+=("$branch")
+  elif git-branch-pr-merged "$ref" "$branch" "$pr_heads"; then
     to_delete+=("$branch")
   fi
 done

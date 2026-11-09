@@ -68,6 +68,15 @@ delete_branches() {
 
 merged_to_delete=()
 squash_to_delete=()
+pr_to_delete=()
+
+# Branches stacked on other work, or with the default branch merged in, defeat
+# the content checks once the default branch moves on, so also ask GitHub which
+# branch heads landed through merged pull requests.
+echo "Listing merged pull requests..."
+pr_heads="$(mktemp)"
+trap 'rm -f "$pr_heads"' EXIT
+git-merged-pr-heads >"$pr_heads" || true
 
 branches=()
 while IFS= read -r branch; do
@@ -88,12 +97,14 @@ for branch in ${branches[@]+"${branches[@]}"}; do
     merged_to_delete+=("$branch")
   elif [[ "$detect_squash" == 1 ]] && git-branch-squash-merged "$branch" "$into"; then
     squash_to_delete+=("$branch")
+  elif git-branch-pr-merged "$branch" "$branch" "$pr_heads"; then
+    pr_to_delete+=("$branch")
   fi
 done
 clear_progress
-echo "Found ${#merged_to_delete[@]} merged and ${#squash_to_delete[@]} squash/rebase-merged local branch(es) to delete."
+echo "Found ${#merged_to_delete[@]} merged, ${#squash_to_delete[@]} squash/rebase-merged, and ${#pr_to_delete[@]} PR-merged local branch(es) to delete."
 
-if [[ ${#merged_to_delete[@]} -eq 0 && ${#squash_to_delete[@]} -eq 0 ]]; then
+if [[ ${#merged_to_delete[@]} -eq 0 && ${#squash_to_delete[@]} -eq 0 && ${#pr_to_delete[@]} -eq 0 ]]; then
   echo "No branches to delete"
   exit 0
 fi
@@ -104,4 +115,8 @@ fi
 if [[ ${#squash_to_delete[@]} -gt 0 ]]; then
   echo "Deleting squash/rebase-merged branches: ${squash_to_delete[*]}"
   delete_branches "${squash_to_delete[@]}"
+fi
+if [[ ${#pr_to_delete[@]} -gt 0 ]]; then
+  echo "Deleting branches whose pull requests merged: ${pr_to_delete[*]}"
+  delete_branches "${pr_to_delete[@]}"
 fi
