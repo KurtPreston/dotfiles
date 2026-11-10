@@ -41,4 +41,10 @@ if [[ -z "$virt" ]]; then
 fi
 
 out="$(git cherry "$into" "$virt" 2>/dev/null || true)"
-[[ "$(echo "$out" | head -n1 | cut -c1)" == "-" ]]
+[[ "$(echo "$out" | head -n1 | cut -c1)" == "-" ]] && exit 0
+
+# Otherwise, treat BRANCH as merged if merging it into INTO would change
+# nothing, which also catches a branch whose PR was rebased before landing.
+# A conflict or an older git without --write-tree reports "not merged".
+merged_tree="$(git merge-tree --write-tree "$into" "$branch" 2>/dev/null | head -n1 || true)"
+[[ -n "$merged_tree" && "$merged_tree" == "$(git rev-parse "${into}^{tree}")" ]]

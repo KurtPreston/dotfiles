@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+# List the head of every merged pull request opened from origin itself (not a
+# fork), one "BRANCH OID NUMBER" line each. Content checks can't spot branches
+# that were stacked on other work or had the default branch merged in once the
+# default branch moves on, but a branch whose tip matches a merged PR head is
+# safely landed.
+#
+# Prints nothing (and exits 0) when gh is missing, origin isn't on GitHub, or
+# the query fails, so callers simply fall back to their other checks.
+#
+# Usage: git-merged-pr-heads
+# Env:   GIT_MERGED_PR_LIMIT  most recent merged PRs to scan (default 1000)
+
+set -euo pipefail
+
+# Skip quietly when there's no way to ask GitHub
+command -v gh >/dev/null 2>&1 || exit 0
+url="$(git remote get-url origin 2>/dev/null || true)"
+[[ "$url" == *github* ]] || exit 0
+
+# Query merged PRs and keep only same-repository heads
+if ! gh pr list --state merged --limit "${GIT_MERGED_PR_LIMIT:-1000}" \
+  --json headRefName,headRefOid,number,isCrossRepository \
+  --jq '.[] | select(.isCrossRepository | not) | "\(.headRefName) \(.headRefOid) \(.number)"' \
+  2>/dev/null; then
+  echo "Could not list merged pull requests with gh; skipping PR-based detection." >&2
+fi
