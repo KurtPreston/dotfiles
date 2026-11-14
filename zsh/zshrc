@@ -24,9 +24,10 @@ fi
 
 # Initialize completion. Each zsh/completions/_<command> file is a #compdef
 # function that compinit autoloads on the command's first Tab.
+# COMPINIT_FLAGS (e.g. -u, set in ~/.localrc) is word-split into extra flags.
 fpath=(~/.dotfiles/zsh/completions $fpath)
 autoload -Uz compinit
-compinit
+compinit ${=COMPINIT_FLAGS}
 
 # Source keybindings
 source ~/.dotfiles/zsh/keybindings

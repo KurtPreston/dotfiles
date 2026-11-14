@@ -168,6 +168,10 @@ Any config you don't want stored in the repo, such as environment variables or l
 Over SSH the prompt shows the hostname. To show a shorter name instead, set
 `PROMPT_HOST` in `~/.localrc` on that server, e.g. `export PROMPT_HOST=web1`.
 
+To pass extra flags to zsh's `compinit`, set `COMPINIT_FLAGS` in `~/.localrc`.
+For example, `export COMPINIT_FLAGS=-u` skips the insecure-directory check, which
+flags Homebrew's completions on a machine where another user ran `brew install`.
+
 ## PATH order
 
 `shared/env` sets up PATH first; the other `shared/*` files then add their own
